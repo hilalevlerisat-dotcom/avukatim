@@ -35,8 +35,9 @@ import {
   calculateFinanceSummary,
   type StoreClient,
   type StoreCase,
-  type StoreFinance,
 } from '@/lib/mock-store'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 import EditClientDialog from '@/components/forms/EditClientDialog'
 import SetRetainerDialog from '@/components/forms/SetRetainerDialog'
 import EditFinanceDialog from '@/components/forms/EditFinanceDialog'
@@ -48,9 +49,11 @@ interface MuvekkilDetayClientProps {
 }
 
 export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
-  const [client, setClient] = useState<StoreClient>(() => getClientById(id))
-  const [cases, setCases] = useState<StoreCase[]>([])
-  const [finances, setFinances] = useState<StoreFinance[]>([])
+  const router = useRouter()
+  const [client, setClient] = useState<any>(null)
+  const [cases, setCases] = useState<any[]>([])
+  const [finances, setFinances] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Dialog states
   const [editClientOpen, setEditClientOpen] = useState(false)
@@ -59,30 +62,52 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
   const [editingFinance, setEditingFinance] = useState<StoreFinance | null>(null)
   const [newCaseOpen, setNewCaseOpen] = useState(false)
 
-  // Load from store & subscribe to updates
-  const refreshData = () => {
-    const c = getClientById(id)
-    setClient(c)
-    setCases(getStoredCases(c.id))
-    setFinances(getStoredFinances(c.id))
+  const refreshData = async () => {
+    const supabase = createClient()
+    const [cRes, casesRes, finRes] = await Promise.all([
+      supabase.from('clients').select('*').eq('id', id).single(),
+      supabase.from('cases').select('*').eq('client_id', id),
+      supabase.from('finance_records').select('*').eq('client_id', id)
+    ])
+    
+    if (cRes.data) setClient(cRes.data)
+    if (casesRes.data) setCases(casesRes.data)
+    if (finRes.data) setFinances(finRes.data)
+    setLoading(false)
   }
 
   useEffect(() => {
     refreshData()
-    const handleUpdate = () => refreshData()
+    // Local store updates for mock data compatibility
+    const handleUpdate = () => {
+      // Just keep it simple since we fetch from Supabase
+    }
     window.addEventListener('avukatim-store-update', handleUpdate)
     return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [id])
 
+  if (loading) return <div className="p-8 text-center animate-pulse">Yükleniyor...</div>
+  if (!client) return <div className="p-8 text-center text-red-500">Müvekkil bulunamadı.</div>
+
   const { totalRetainer, totalPaid, remaining, paidPct } = calculateFinanceSummary(finances)
 
-  // Actions
-  const handleClientSaved = (updated: StoreClient, newRetainer?: number) => {
-    updateClientInStore(updated.id, updated)
-    if (newRetainer !== undefined) {
-      setClientRetainerFee(updated.id, newRetainer)
-    }
+  const handleClientSaved = async (updated: StoreClient, newRetainer?: number) => {
+    const supabase = createClient()
+    await supabase.from('clients').update({
+      full_name: updated.full_name,
+      tc_no: updated.tc_no,
+      phone: updated.phone,
+      email: updated.email,
+      address: updated.address,
+      notes: updated.notes
+    }).eq('id', updated.id)
     refreshData()
+  }
+
+  const handleClientDeleted = async (clientId: string) => {
+    const supabase = createClient()
+    await supabase.from('clients').delete().eq('id', clientId)
+    router.push('/muvekkiller')
   }
 
   const handleRetainerSaved = (amount: number, description: string) => {
@@ -371,9 +396,10 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
       <EditClientDialog
         open={editClientOpen}
         onClose={() => setEditClientOpen(false)}
-        client={client}
+        client={client as any}
         currentRetainer={totalRetainer}
         onSaved={handleClientSaved}
+        onDeleted={handleClientDeleted}
       />
 
       {/* Quick Set/Edit Retainer Modal */}

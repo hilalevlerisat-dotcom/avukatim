@@ -13,6 +13,7 @@ interface EditClientDialogProps {
   client: StoreClient
   currentRetainer?: number
   onSaved: (updatedClient: StoreClient, newRetainer?: number) => void
+  onDeleted?: (id: string) => void
 }
 
 export default function EditClientDialog({
@@ -21,6 +22,7 @@ export default function EditClientDialog({
   client,
   currentRetainer = 0,
   onSaved,
+  onDeleted,
 }: EditClientDialogProps) {
   const [form, setForm] = useState({
     full_name: client.full_name,
@@ -177,14 +179,30 @@ export default function EditClientDialog({
             />
           </Field>
 
-          <DialogFooter className="gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              İptal
-            </Button>
-            <Button type="submit" disabled={loading || !form.full_name} className="gap-2">
-              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Değişiklikleri Kaydet
-            </Button>
+          <DialogFooter className="gap-2 pt-2 sm:justify-between">
+            {onDeleted ? (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={() => {
+                  if (confirm('Bu müvekkili silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+                    onDeleted(client.id)
+                  }
+                }} 
+                disabled={loading}
+              >
+                Müvekkili Sil
+              </Button>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                İptal
+              </Button>
+              <Button type="submit" disabled={loading || !form.full_name} className="gap-2">
+                {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Değişiklikleri Kaydet
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -41,38 +41,59 @@ export function isAuthenticated(): boolean {
 export async function login(username: string, password: string): Promise<{ success: boolean; user?: UserSession; error?: string }> {
   const cleanUser = username.trim().toLowerCase()
   const cleanPass = password.trim()
-  const supabase = createClient()
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: cleanUser,
-    password: cleanPass
-  })
+  // 1. Check against registered system users (Offline)
+  const systemUsers = getSystemUsers()
+  const foundUser = systemUsers.find(
+    u => u.username.toLowerCase() === cleanUser && u.password === cleanPass
+  )
 
-  if (error) {
-    return { success: false, error: 'E-posta veya şifre hatalı. Lütfen bilgilerinizi kontrol ediniz.' }
+  if (foundUser) {
+    if (!foundUser.is_active) {
+      return { success: false, error: 'Bu kullanıcı hesabı yönetici tarafından devre dışı bırakılmıştır.' }
+    }
+
+    const session: UserSession = {
+      id: foundUser.id,
+      username: foundUser.username,
+      name: foundUser.name,
+      title: foundUser.title,
+      email: foundUser.email,
+      role: foundUser.role,
+      allowed_panels: foundUser.allowed_panels,
+      loginTime: new Date().toISOString(),
+    }
+
+    if (isBrowser()) {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(session))
+      document.cookie = `${AUTH_COOKIE}=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+      window.dispatchEvent(new Event('avukatim-auth-change'))
+    }
+    return { success: true, user: session }
   }
 
-  if (!data.user) {
-    return { success: false, error: 'Bilinmeyen bir hata oluştu.' }
+  // 2. Fallback check for root admin
+  if (cleanUser === 'admin' && cleanPass === 'admin') {
+    const profile = getLawyerProfile()
+    const session: UserSession = {
+      username: 'admin',
+      name: profile.full_name || 'Av. Mahmut Sait BOZKURT',
+      title: 'Yönetici Avukat',
+      email: profile.email || 'av.mahmutsait@hukuk.com',
+      role: 'admin',
+      allowed_panels: ['dashboard', 'dosyalar', 'muvekkiller', 'takvim', 'finans', 'hatirlaticilar', 'yonetici'],
+      loginTime: new Date().toISOString(),
+    }
+
+    if (isBrowser()) {
+      localStorage.setItem(AUTH_KEY, JSON.stringify(session))
+      document.cookie = `${AUTH_COOKIE}=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+      window.dispatchEvent(new Event('avukatim-auth-change'))
+    }
+    return { success: true, user: session }
   }
 
-  const session: UserSession = {
-    id: data.user.id,
-    username: cleanUser,
-    name: 'Av. Mahmut Sait BOZKURT',
-    title: 'Yönetici Avukat',
-    email: cleanUser,
-    role: 'admin',
-    allowed_panels: ['dashboard', 'dosyalar', 'muvekkiller', 'takvim', 'finans', 'hatirlaticilar', 'yonetici'],
-    loginTime: new Date().toISOString(),
-  }
-
-  if (isBrowser()) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify(session))
-    document.cookie = `${AUTH_COOKIE}=true; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
-    window.dispatchEvent(new Event('avukatim-auth-change'))
-  }
-  return { success: true, user: session }
+  return { success: false, error: 'Kullanıcı adı veya şifre hatalı. Lütfen bilgilerinizi kontrol ediniz.' }
 }
 
 export function switchActiveUser(user: SystemUser): void {

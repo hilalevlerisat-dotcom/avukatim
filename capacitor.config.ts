@@ -7,7 +7,8 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
     iosScheme: 'https',
-    cleartext: true
+    cleartext: true,
+    url: 'https://avukatim.vercel.app'
   },
   ios: {
     contentInset: 'always',

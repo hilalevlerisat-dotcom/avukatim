@@ -32,7 +32,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [showForgotHint, setShowForgotHint] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,11 +58,7 @@ export default function LoginPage() {
     }
   }
 
-  const fillDemo = () => {
-    setUsername('admin')
-    setPassword('admin')
-    setError(null)
-  }
+
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-950 p-4 sm:p-6 selection:bg-indigo-500/30 selection:text-indigo-200">
@@ -120,22 +115,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Quick Demo Fill Pill */}
-          <div className="mb-5">
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="w-full group flex items-center justify-between px-3.5 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/15 hover:border-indigo-500/35 transition-all text-xs"
-            >
-              <div className="flex items-center gap-2 text-indigo-300 font-medium">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-12 transition-transform" />
-                <span>Demo Girişi: <b>admin</b> / <b>admin</b></span>
-              </div>
-              <span className="text-[11px] text-indigo-400/80 group-hover:text-indigo-300 group-hover:underline font-medium">
-                Doldur →
-              </span>
-            </button>
-          </div>
 
           {/* Error Message */}
           <AnimatePresence>
@@ -154,27 +133,6 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          {/* Forgot Password Hint */}
-          <AnimatePresence>
-            {showForgotHint && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mb-4 overflow-hidden"
-              >
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-start gap-2">
-                  <HelpCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
-                  <div>
-                    <p className="font-semibold">Demo Şifre Bilgisi</p>
-                    <p className="text-[11px] text-amber-300/80 mt-0.5">
-                      Giriş için kullanıcı adı: <b>admin</b>, şifre: <b>admin</b> olarak ayarlanmıştır.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -207,7 +165,7 @@ export default function LoginPage() {
                 </label>
                 <button
                   type="button"
-                  onClick={() => setShowForgotHint(prev => !prev)}
+                  onClick={() => setError('Şifre sıfırlama işlemi için sistem yöneticinizle iletişime geçin.')}
                   className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
                 >
                   Şifremi unuttum

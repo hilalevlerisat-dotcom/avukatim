@@ -239,14 +239,49 @@ export default function CaseTabs({
         caseName={caseName}
         open={hearingDialogOpen}
         onClose={() => setHearingDialogOpen(false)}
-        onCreated={h => setHearings(prev => [h, ...prev])}
+        onCreated={async (h) => {
+          const supabase = createClient()
+          const { data } = await supabase.from('hearings').insert({
+            case_id: caseId,
+            case_title: caseName,
+            client_id: clientId,
+            client_name: 'Müvekkil', // In a real app we'd fetch this properly if not available
+            hearing_date: h.hearing_date,
+            court_name: h.court_name,
+            courtroom: h.courtroom,
+            judge_name: h.judge_name,
+            is_completed: h.is_completed,
+            result: h.result
+          }).select().single()
+          
+          if (data) {
+            setHearings(prev => [data, ...prev])
+          }
+        }}
       />
       <NewDeadlineDialog
         caseId={caseId}
         caseName={caseName}
         open={deadlineDialogOpen}
         onClose={() => setDeadlineDialogOpen(false)}
-        onCreated={d => setDeadlines(prev => [d, ...prev])}
+        onCreated={async (d) => {
+          const supabase = createClient()
+          const { data } = await supabase.from('deadlines').insert({
+            case_id: caseId,
+            case_title: caseName,
+            client_id: clientId,
+            client_name: 'Müvekkil', // In a real app we'd fetch this properly
+            title: d.title,
+            deadline_type: d.deadline_type,
+            due_date: d.due_date,
+            description: d.description,
+            is_completed: d.is_completed
+          }).select().single()
+
+          if (data) {
+            setDeadlines(prev => [data, ...prev])
+          }
+        }}
       />
       <NewFinanceDialog
         open={financeDialogOpen}
@@ -255,7 +290,16 @@ export default function CaseTabs({
         cases={[{ id: caseId, title: caseName, client_id: clientId }]}
         defaultClientId={clientId}
         defaultCaseId={caseId}
-        onCreated={rec => setFinances(prev => [rec, ...prev])}
+        onCreated={async (rec) => {
+          const supabase = createClient()
+          const { data } = await supabase.from('finance_records').insert({
+            ...rec, id: undefined
+          }).select().single()
+          
+          if (data) {
+            setFinances(prev => [data, ...prev])
+          }
+        }}
       />
     </>
   )

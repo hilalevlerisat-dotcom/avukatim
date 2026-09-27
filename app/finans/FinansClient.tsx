@@ -28,52 +28,66 @@ export default function FinansClient() {
   const [cases, setCases] = useState<any[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFinance, setEditingFinance] = useState<StoreFinance | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
-    setRecords(getStoredFinances())
-    
-    // Fetch clients and cases from Supabase
+    setLoading(true)
     const supabase = createClient()
-    const [clientsRes, casesRes] = await Promise.all([
+    const [financesRes, clientsRes, casesRes] = await Promise.all([
+      supabase.from('finance_records').select('*').order('transaction_date', { ascending: false }),
       supabase.from('clients').select('id, full_name'),
       supabase.from('cases').select('id, title, client_id')
     ])
+    
+    if (financesRes.data) setRecords(financesRes.data as any)
     if (clientsRes.data) setClients(clientsRes.data)
     if (casesRes.data) setCases(casesRes.data)
+    setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-    const handleUpdate = () => {
-      setRecords(getStoredFinances())
-    }
-    window.addEventListener('avukatim-store-update', handleUpdate)
-    return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [])
 
   const { totalRetainer, totalPaid, totalExpense, remaining } = calculateFinanceSummary(records)
 
-  const upcomingCollections = getAllCollectionSchedules().filter(c => !c.is_paid)
+  const upcomingCollections = getAllCollectionSchedules(records).filter(c => !c.is_paid)
 
-  const handleCreated = (rec: StoreFinance) => {
-    saveFinanceToStore(rec)
+  const handleCreated = async (rec: any) => {
+    const supabase = createClient()
+    await supabase.from('finance_records').insert({ ...rec, id: undefined })
     loadData()
   }
 
-  const handleUpdated = (rec: StoreFinance) => {
-    saveFinanceToStore(rec)
+  const handleUpdated = async (rec: any) => {
+    const supabase = createClient()
+    await supabase.from('finance_records').update(rec).eq('id', rec.id)
     loadData()
   }
 
-  const handleDeleted = (id: string) => {
-    deleteFinanceFromStore(id)
+  const handleDeleted = async (id: string) => {
+    const supabase = createClient()
+    await supabase.from('finance_records').delete().eq('id', id)
     loadData()
   }
 
-  const handleQuickCollect = (financeId: string, installmentId?: string) => {
-    markCollectionAsPaid(financeId, installmentId, true)
+  const handleQuickCollect = async (financeId: string, installmentId?: string) => {
+    const record = records.find(r => r.id === financeId)
+    if (!record) return
+
+    const supabase = createClient()
+    if (installmentId && record.installments) {
+      const updatedInstallments = record.installments.map((i: any) => 
+        i.id === installmentId ? { ...i, is_paid: true, paid_date: new Date().toISOString().split('T')[0] } : i
+      )
+      await supabase.from('finance_records').update({ installments: updatedInstallments }).eq('id', financeId)
+    } else {
+      await supabase.from('finance_records').update({ is_collected: true }).eq('id', financeId)
+    }
     loadData()
   }
+
+  if (loading) return <div className="p-8 text-center animate-pulse">Yükleniyor...</div>
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">

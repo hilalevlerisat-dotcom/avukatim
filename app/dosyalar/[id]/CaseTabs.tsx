@@ -9,6 +9,7 @@ import { CalendarDays, Clock, Wallet, FileText, Plus, CheckCircle2 } from 'lucid
 import { formatDate, formatDateTime, formatCurrency, daysFromNow, urgencyLabel, DEADLINE_TYPE_LABELS, FINANCE_TYPE_LABELS, FINANCE_TYPE_COLORS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getStoredDocuments, deleteDocumentFromStore } from '@/lib/mock-store'
+import { createClient } from '@/lib/supabase/client'
 import NewHearingDialog from '@/components/forms/NewHearingDialog'
 import NewDeadlineDialog from '@/components/forms/NewDeadlineDialog'
 import NewFinanceDialog from '@/components/forms/NewFinanceDialog'
@@ -45,10 +46,15 @@ export default function CaseTabs({
   // Listen to store updates
   useEffect(() => {
     setMounted(true)
-    setDocuments(getStoredDocuments(caseId))
-    const handleUpdate = () => {
-      setDocuments(getStoredDocuments(caseId))
+    const fetchDocs = async () => {
+      const supabase = createClient()
+      const { data } = await supabase.from('documents').select('*').eq('case_id', caseId)
+      if (data) setDocuments(data as Document[])
     }
+    fetchDocs()
+    
+    // Listen for local updates until we setup realtime
+    const handleUpdate = () => fetchDocs()
     window.addEventListener('avukatim-store-update', handleUpdate)
     return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [caseId])

@@ -54,6 +54,7 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
   const [cases, setCases] = useState<any[]>([])
   const [finances, setFinances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   // Dialog states
   const [editClientOpen, setEditClientOpen] = useState(false)
@@ -64,34 +65,45 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
 
   const refreshData = async () => {
     const supabase = createClient()
-    const [cRes, casesRes, finRes] = await Promise.all([
-      supabase.from('clients').select('*').eq('id', id).single(),
+    const { data: clientData, error: clientError } = await supabase
+      .from('clients')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (clientError) {
+      setFetchError(`${clientError.message} (${clientError.code})`)
+    }
+    if (clientData) {
+      setClient(clientData)
+      setFetchError(null)
+    }
+
+    const [casesRes, finRes] = await Promise.all([
       supabase.from('cases').select('*').eq('client_id', id),
       supabase.from('finance_records').select('*').eq('client_id', id)
     ])
-
-    if (cRes.error) console.error('Client fetch error:', JSON.stringify(cRes.error))
-    if (casesRes.error) console.error('Cases fetch error:', JSON.stringify(casesRes.error))
-    if (finRes.error) console.error('Finance fetch error:', JSON.stringify(finRes.error))
-
-    if (cRes.data) setClient(cRes.data)
     if (casesRes.data) setCases(casesRes.data)
     if (finRes.data) setFinances(finRes.data)
     setLoading(false)
   }
 
-  useEffect(() => {
-    refreshData()
-    // Local store updates for mock data compatibility
-    const handleUpdate = () => {
-      // Just keep it simple since we fetch from Supabase
-    }
-    window.addEventListener('avukatim-store-update', handleUpdate)
-    return () => window.removeEventListener('avukatim-store-update', handleUpdate)
-  }, [id])
+  useEffect(() => { refreshData() }, [id])
 
   if (loading) return <div className="p-8 text-center animate-pulse">Yükleniyor...</div>
-  if (!client) return <div className="p-8 text-center text-red-500">Müvekkil bulunamadı.</div>
+
+  if (!client) {
+    return (
+      <div className="p-8 text-center space-y-3 max-w-lg mx-auto">
+        <p className="text-red-500 font-semibold text-lg">Müvekkil yüklenemedi</p>
+        {fetchError && (
+          <p className="text-xs text-left bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 p-3 rounded-lg font-mono break-all">{fetchError}</p>
+        )}
+        <p className="text-xs text-muted-foreground">Müvekkil ID: {id}</p>
+        <Button variant="outline" onClick={() => router.push('/muvekkiller')}>Geri dön</Button>
+      </div>
+    )
+  }
 
   const { totalRetainer, totalPaid, remaining, paidPct } = calculateFinanceSummary(finances)
 

@@ -69,7 +69,11 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
       supabase.from('cases').select('*').eq('client_id', id),
       supabase.from('finance_records').select('*').eq('client_id', id)
     ])
-    
+
+    if (cRes.error) console.error('Client fetch error:', JSON.stringify(cRes.error))
+    if (casesRes.error) console.error('Cases fetch error:', JSON.stringify(casesRes.error))
+    if (finRes.error) console.error('Finance fetch error:', JSON.stringify(finRes.error))
+
     if (cRes.data) setClient(cRes.data)
     if (casesRes.data) setCases(casesRes.data)
     if (finRes.data) setFinances(finRes.data)

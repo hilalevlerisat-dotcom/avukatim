@@ -47,10 +47,23 @@ export function createClient() {
       }),
     }),
     select: () => ({
-      eq: () => ({
+      eq: (col: string, val: string) => ({
         order: () => Promise.resolve({ data: [], error: null }),
+        single: async () => ({ data: null, error: null }),
+        eq: () => Promise.resolve({ data: [], error: null }),
       }),
       order: () => Promise.resolve({ data: [], error: null }),
+    }),
+    delete: () => ({
+      eq: () => Promise.resolve({ error: null }),
+    }),
+    update: (values: any) => ({
+      eq: () => Promise.resolve({ data: null, error: null }),
+    }),
+    upsert: (values: any) => ({
+      select: () => ({
+        single: async () => ({ data: values, error: null }),
+      }),
     }),
   }
 

@@ -63,9 +63,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-950 p-4 sm:p-6 selection:bg-indigo-500/30 selection:text-indigo-200">
       {/* ── Ambient Background Lighting Effects ────────────────── */}
-      <div className="absolute top-[-15%] left-[-10%] w-[550px] h-[550px] rounded-full bg-indigo-600/20 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-blue-600/10 blur-[160px] pointer-events-none" />
+      {/* Ambient Background Lights - Optimized for mobile without CSS blur filter */}
+      <div className="absolute top-[-15%] left-[-10%] w-[550px] h-[550px] rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-600/10 to-transparent pointer-events-none" />
+      <div className="absolute bottom-[-15%] right-[-10%] w-[500px] h-[500px] rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-violet-600/10 to-transparent pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-600/5 to-transparent pointer-events-none" />
 
       {/* Decorative Grid Pattern Overlay */}
       <div 

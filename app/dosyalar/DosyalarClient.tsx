@@ -12,7 +12,7 @@ import { formatDate, CATEGORY_LABELS, CATEGORY_COLORS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import NewCaseDialog from '@/components/forms/NewCaseDialog'
 import type { CaseCategory, CaseStatus } from '@/lib/database.types'
-import { getStoredCases, saveCaseToStore, getStoredClients } from '@/lib/mock-store'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Üretim: başlangıç verisi yok ────────────────────────────────────────────
 type LocalCase = {
@@ -35,30 +35,41 @@ export default function DosyalarClient() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const loadData = () => {
-    const rawCases = getStoredCases()
-    setCases(rawCases.map(c => ({
-      id: c.id,
-      title: c.title,
-      category: c.category,
-      status: c.status,
-      case_number: c.case_number,
-      client: c.client_name || 'Müvekkil',
-      client_id: c.client_id,
-      open_date: c.open_date,
-      priority: 2,
-      court_name: c.court_name,
-      opposing_party: '',
-      description: c.description || '',
-    })))
-    setClients(getStoredClients().map(cl => ({ id: cl.id, full_name: cl.full_name })))
+  const [loading, setLoading] = useState(true)
+
+  const loadData = async () => {
+    const supabase = createClient()
+    
+    const [casesRes, clientsRes] = await Promise.all([
+      supabase.from('cases').select('*, clients(full_name)').order('created_at', { ascending: false }),
+      supabase.from('clients').select('id, full_name')
+    ])
+
+    if (casesRes.data) {
+      setCases(casesRes.data.map(c => ({
+        id: c.id,
+        title: c.title,
+        category: c.category as CaseCategory,
+        status: c.status as CaseStatus,
+        case_number: c.case_number || '',
+        client: (c.clients as any)?.full_name || 'Bilinmiyor',
+        client_id: c.client_id,
+        open_date: c.open_date || '',
+        priority: c.priority as 1 | 2 | 3,
+        court_name: c.court_name || '',
+        opposing_party: c.opposing_party || '',
+        description: c.description || '',
+      })))
+    }
+
+    if (clientsRes.data) {
+      setClients(clientsRes.data)
+    }
+    setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-    const handleUpdate = () => loadData()
-    window.addEventListener('avukatim-store-update', handleUpdate)
-    return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [])
 
   const filtered = cases.filter(c =>
@@ -174,11 +185,15 @@ export default function DosyalarClient() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         clients={clients}
-        onCreated={newCase => {
-          saveCaseToStore({
-            id: newCase.id,
+        onCreated={async (newCase) => {
+          const supabase = createClient()
+          const { data: authData } = await supabase.auth.getUser()
+          if (!authData.user) return
+
+          // Insert into Supabase
+          await supabase.from('cases').insert({
+            user_id: authData.user.id,
             client_id: newCase.client_id,
-            client_name: newCase.client,
             title: newCase.title,
             category: newCase.category,
             status: newCase.status,
@@ -186,7 +201,9 @@ export default function DosyalarClient() {
             court_name: newCase.court_name,
             open_date: newCase.open_date,
             description: newCase.description,
+            priority: 2
           })
+          
           loadData()
         }}
       />

@@ -10,14 +10,8 @@ import { formatCurrency } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import NewClientDialog from '@/components/forms/NewClientDialog'
 import type { Client } from '@/lib/database.types'
-import { 
-  getStoredClients, 
-  saveStoredClients, 
-  getStoredFinances, 
-  getStoredCases, 
-  calculateFinanceSummary,
-  type StoreClient 
-} from '@/lib/mock-store'
+import type { Client } from '@/lib/database.types'
+import { createClient } from '@/lib/supabase/client'
 
 function initials(name: string) {
   return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -35,17 +29,24 @@ export default function MuvekkillerClient() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [search, setSearch] = useState('')
 
-  const loadData = () => {
-    setClients(getStoredClients())
-    setFinances(getStoredFinances())
-    setCases(getStoredCases())
+  const [loading, setLoading] = useState(true)
+
+  const loadData = async () => {
+    const supabase = createClient()
+    const [clientsRes, financesRes, casesRes] = await Promise.all([
+      supabase.from('clients').select('*').order('created_at', { ascending: false }),
+      supabase.from('finance_records').select('*'),
+      supabase.from('cases').select('id, client_id')
+    ])
+
+    if (clientsRes.data) setClients(clientsRes.data as any)
+    if (financesRes.data) setFinances(financesRes.data)
+    if (casesRes.data) setCases(casesRes.data)
+    setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-    const handleUpdate = () => loadData()
-    window.addEventListener('avukatim-store-update', handleUpdate)
-    return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [])
 
   const filtered = clients.filter(c =>
@@ -55,14 +56,25 @@ export default function MuvekkillerClient() {
     (c.email ?? '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleCreated = (newClient: Omit<Client, 'user_id' | 'created_at' | 'updated_at'>) => {
-    const newStoreClient: StoreClient = {
-      ...newClient,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    const current = getStoredClients()
-    saveStoredClients([newStoreClient, ...current])
+  const handleCreated = async (newClient: Omit<Client, 'user_id' | 'created_at' | 'updated_at'>) => {
+    const supabase = createClient()
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData.user) return
+
+    await supabase.from('clients').insert({
+      user_id: authData.user.id,
+      id: newClient.id,
+      full_name: newClient.full_name,
+      tc_no: newClient.tc_no,
+      company_name: newClient.company_name,
+      client_type: newClient.client_type,
+      phone: newClient.phone,
+      email: newClient.email,
+      address: newClient.address,
+      notes: newClient.notes,
+      is_active: newClient.is_active
+    })
+    
     loadData()
   }
 
@@ -108,13 +120,19 @@ export default function MuvekkillerClient() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(client => {
-            const clientFinances = finances.filter(f => f.client_id === client.id || (client.id === 'c1' && f.client_id === '1') || (client.id === '1' && f.client_id === 'c1'))
-            const { totalRetainer, totalPaid } = calculateFinanceSummary(clientFinances)
+            const clientFinances = finances.filter(f => f.client_id === client.id)
+            let totalRetainer = 0
+            let totalPaid = 0
+            clientFinances.forEach(f => {
+              if (f.finance_type === 'retainer') totalRetainer += f.amount
+              if (f.finance_type === 'payment') totalPaid += f.amount
+            })
+            
             const remaining = Math.max(0, totalRetainer - totalPaid)
             const paidPct = totalRetainer > 0
               ? Math.min(100, Math.round((totalPaid / totalRetainer) * 100))
               : 0
-            const activeCases = cases.filter(c => c.client_id === client.id || (client.id === 'c1' && c.client_id === '1')).length
+            const activeCases = cases.filter(c => c.client_id === client.id).length
 
             return (
               <Link

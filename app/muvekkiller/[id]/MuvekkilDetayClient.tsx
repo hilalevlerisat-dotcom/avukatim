@@ -59,7 +59,7 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
   const [editClientOpen, setEditClientOpen] = useState(false)
   const [setRetainerOpen, setSetRetainerOpen] = useState(false)
   const [newFinanceOpen, setNewFinanceOpen] = useState(false)
-  const [editingFinance, setEditingFinance] = useState<StoreFinance | null>(null)
+  const [editingFinance, setEditingFinance] = useState<any | null>(null)
   const [newCaseOpen, setNewCaseOpen] = useState(false)
 
   const refreshData = async () => {
@@ -115,12 +115,12 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
     refreshData()
   }
 
-  const handleFinanceCreated = (record: StoreFinance) => {
+  const handleFinanceCreated = (record: any) => {
     saveFinanceToStore(record)
     refreshData()
   }
 
-  const handleFinanceUpdated = (updated: StoreFinance) => {
+  const handleFinanceUpdated = (updated: any) => {
     saveFinanceToStore(updated)
     refreshData()
   }
@@ -356,11 +356,11 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
 
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <p className={cn('text-sm font-bold tabular-nums', FINANCE_TYPE_COLORS[f.finance_type])}>
+                      <p className={cn('text-sm font-bold tabular-nums', FINANCE_TYPE_COLORS[f.finance_type as keyof typeof FINANCE_TYPE_COLORS])}>
                         {f.finance_type === 'payment' ? '+' : f.finance_type === 'expense' || f.finance_type === 'court_fee' ? '-' : ''}
                         {formatCurrency(f.amount)}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{FINANCE_TYPE_LABELS[f.finance_type]}</p>
+                      <p className="text-[10px] text-muted-foreground">{FINANCE_TYPE_LABELS[f.finance_type as keyof typeof FINANCE_TYPE_LABELS]}</p>
                     </div>
 
                     {/* Actions */}

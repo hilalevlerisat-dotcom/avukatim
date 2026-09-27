@@ -46,7 +46,7 @@ export default function LoginPage() {
     // Small artificial delay for smooth UX transition
     await new Promise(r => setTimeout(r, 450))
 
-    const res = login(username, password)
+    const res = await login(username, password)
     if (res.success) {
       setSuccess(true)
       await new Promise(r => setTimeout(r, 600))
@@ -83,7 +83,7 @@ export default function LoginPage() {
         transition={{ duration: 0.45, ease: 'easeOut' }}
         className="w-full max-w-[440px] relative z-10"
       >
-        <div className="rounded-3xl border border-white/10 bg-slate-900/70 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] text-slate-100 relative overflow-hidden">
+        <div className="rounded-3xl border border-white/10 bg-slate-900/90 p-6 sm:p-8 shadow-2xl text-slate-100 relative overflow-hidden">
           
           {/* Subtle top card glow line */}
           <div className="absolute top-0 left-1/4 right-1/4 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/80 to-transparent" />

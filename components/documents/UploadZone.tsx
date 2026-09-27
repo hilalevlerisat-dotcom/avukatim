@@ -286,10 +286,13 @@ export default function UploadZone({
 
       if (isSupabaseConfigured()) {
         try {
+          const { data: { user } } = await supabase.auth.getUser()
+          const activeUserId = user ? user.id : userId
+
           const { data: doc, error: dbError } = await supabase
             .from('documents')
             .insert({
-              user_id: userId,
+              user_id: activeUserId,
               client_id: clientId === 'genel' ? null : clientId,
               case_id: caseId,
               file_name: item.file.name,

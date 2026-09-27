@@ -15,13 +15,12 @@ import {
   getStoredFinances, 
   saveFinanceToStore, 
   deleteFinanceFromStore, 
-  getStoredClients, 
-  getStoredCases,
   calculateFinanceSummary,
   getAllCollectionSchedules,
   markCollectionAsPaid,
   type StoreFinance 
 } from '@/lib/mock-store'
+import { createClient } from '@/lib/supabase/client'
 
 export default function FinansClient() {
   const [records, setRecords] = useState<StoreFinance[]>([])
@@ -30,15 +29,24 @@ export default function FinansClient() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingFinance, setEditingFinance] = useState<StoreFinance | null>(null)
 
-  const loadData = () => {
+  const loadData = async () => {
     setRecords(getStoredFinances())
-    setClients(getStoredClients())
-    setCases(getStoredCases())
+    
+    // Fetch clients and cases from Supabase
+    const supabase = createClient()
+    const [clientsRes, casesRes] = await Promise.all([
+      supabase.from('clients').select('id, full_name'),
+      supabase.from('cases').select('id, title, client_id')
+    ])
+    if (clientsRes.data) setClients(clientsRes.data)
+    if (casesRes.data) setCases(casesRes.data)
   }
 
   useEffect(() => {
     loadData()
-    const handleUpdate = () => loadData()
+    const handleUpdate = () => {
+      setRecords(getStoredFinances())
+    }
     window.addEventListener('avukatim-store-update', handleUpdate)
     return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [])

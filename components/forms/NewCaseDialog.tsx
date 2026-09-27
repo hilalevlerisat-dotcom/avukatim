@@ -101,7 +101,9 @@ export default function NewCaseDialog({ open, onClose, clients, defaultClientId,
             <Field label="Müvekkil" required>
               <Select value={form.client_id} onValueChange={v => set('client_id', v as any)}>
                 <SelectTrigger id="case-client-select" className="h-9">
-                  <SelectValue placeholder="Müvekkil seçin…" />
+                  <SelectValue placeholder="Müvekkil seçin…">
+                    {selectedClient ? selectedClient.full_name : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {clients.length === 0 && (

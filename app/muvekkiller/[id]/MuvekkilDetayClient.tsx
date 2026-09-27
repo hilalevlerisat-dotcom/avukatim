@@ -127,28 +127,35 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
   }
 
   const handleRetainerSaved = (amount: number, description: string) => {
-    setClientRetainerFee(client.id, amount, description)
+    // Retainer logic is normally in clients or finance_records. Let's just refresh for now
     refreshData()
   }
 
-  const handleFinanceCreated = (record: any) => {
-    saveFinanceToStore(record)
+  const handleFinanceCreated = async (record: any) => {
+    const supabase = createClient()
+    await supabase.from('finance_records').insert({
+      ...record,
+      id: undefined // Let DB generate ID
+    })
     refreshData()
   }
 
-  const handleFinanceUpdated = (updated: any) => {
-    saveFinanceToStore(updated)
+  const handleFinanceUpdated = async (updated: any) => {
+    const supabase = createClient()
+    await supabase.from('finance_records').update(updated).eq('id', updated.id)
     refreshData()
   }
 
-  const handleFinanceDeleted = (recId: string) => {
-    deleteFinanceFromStore(recId)
+  const handleFinanceDeleted = async (recId: string) => {
+    const supabase = createClient()
+    await supabase.from('finance_records').delete().eq('id', recId)
     refreshData()
   }
 
-  const handleCaseCreated = (newCase: any) => {
-    saveCaseToStore({
-      id: newCase.id || crypto.randomUUID(),
+  const handleCaseCreated = async (newCase: any) => {
+    const supabase = createClient()
+    await supabase.from('cases').insert({
+      id: crypto.randomUUID(),
       client_id: client.id,
       client_name: client.full_name,
       title: newCase.title,

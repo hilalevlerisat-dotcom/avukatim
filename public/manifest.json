@@ -1,0 +1,15 @@
+{
+  "name": "Avukat Asistanı",
+  "short_name": "Avukatım",
+  "description": "Avukatlar için modern dosya, müvekkil ve finans yönetim sistemi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1b4b",
+  "theme_color": "#1e1b4b",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "tr"
+}

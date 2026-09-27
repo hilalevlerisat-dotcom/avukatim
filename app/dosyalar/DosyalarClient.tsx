@@ -46,7 +46,7 @@ export default function DosyalarClient() {
     ])
 
     if (casesRes.data) {
-      setCases(casesRes.data.map(c => ({
+      setCases(casesRes.data.map((c: any) => ({
         id: c.id,
         title: c.title,
         category: c.category as CaseCategory,

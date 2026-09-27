@@ -10,7 +10,6 @@ import { formatCurrency } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import NewClientDialog from '@/components/forms/NewClientDialog'
 import type { Client } from '@/lib/database.types'
-import type { Client } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/client'
 
 function initials(name: string) {
@@ -23,7 +22,7 @@ function avatarColor(id: string) {
 }
 
 export default function MuvekkillerClient() {
-  const [clients, setClients] = useState<StoreClient[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [finances, setFinances] = useState<any[]>([])
   const [cases, setCases] = useState<any[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)

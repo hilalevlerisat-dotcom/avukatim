@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDate, formatDateTime, daysFromNow, urgencyLabel, DEADLINE_TYPE_LABELS, formatCurrency } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { getAllCollectionSchedules, markCollectionAsPaid, type CollectionItem } from '@/lib/mock-store'
+import { getAllCollectionSchedules, type CollectionItem } from '@/lib/mock-store'
 import type { DeadlineType } from '@/lib/database.types'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Tipler ve Başlangıç Verisi (Canlı Ortam: Boş Başlar) ────────────────────
 export type HearingItem = {
@@ -31,8 +32,7 @@ export type DeadlineItem = {
   is_completed: boolean
 }
 
-const MOCK_HEARINGS: HearingItem[] = []
-const MOCK_DEADLINES: DeadlineItem[] = []
+// Mock data removed in favor of Supabase
 
 const MONTHS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
 const WEEK_DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
@@ -47,7 +47,13 @@ interface DayInfo {
   collections: CollectionItem[]
 }
 
-function getCalendarDays(year: number, month: number, collections: CollectionItem[]): DayInfo[] {
+function getCalendarDays(
+  year: number, 
+  month: number, 
+  collections: CollectionItem[],
+  hearingsList: HearingItem[],
+  deadlinesList: DeadlineItem[]
+): DayInfo[] {
   const today = new Date()
   const todayISO = today.toISOString().split('T')[0]
   const firstDay = new Date(year, month, 1).getDay()
@@ -82,8 +88,8 @@ function getCalendarDays(year: number, month: number, collections: CollectionIte
       fullDate,
       currentMonth: true,
       isToday: fullDate === todayISO,
-      hearings: MOCK_HEARINGS.filter(h => h.hearing_date.startsWith(fullDate)),
-      deadlines: MOCK_DEADLINES.filter(dl => dl.due_date === fullDate),
+      hearings: hearingsList.filter(h => h.hearing_date.startsWith(fullDate)),
+      deadlines: deadlinesList.filter(dl => dl.due_date === fullDate),
       collections: collections.filter(c => c.due_date === fullDate),
     })
   }
@@ -112,23 +118,30 @@ export default function TakvimClient() {
   const now = new Date()
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
-  const [collections, setCollections] = useState<CollectionItem[]>(() => getAllCollectionSchedules())
+  const [collections, setCollections] = useState<CollectionItem[]>([])
+  const [hearings, setHearings] = useState<HearingItem[]>([])
+  const [deadlines, setDeadlines] = useState<DeadlineItem[]>([])
 
   // Seçili gün
   const [selectedDay, setSelectedDay] = useState<DayInfo | null>(null)
 
-  const loadData = () => {
-    setCollections(getAllCollectionSchedules())
+  const loadData = async () => {
+    const supabase = createClient()
+    const [financesRes, hearingsRes, deadlinesRes] = await Promise.all([
+      supabase.from('finance_records').select('*'),
+      supabase.from('hearings').select('*'),
+      supabase.from('deadlines').select('*')
+    ])
+    if (financesRes.data) setCollections(getAllCollectionSchedules(financesRes.data as any))
+    if (hearingsRes.data) setHearings(hearingsRes.data as HearingItem[])
+    if (deadlinesRes.data) setDeadlines(deadlinesRes.data as DeadlineItem[])
   }
 
   useEffect(() => {
     loadData()
-    const handleUpdate = () => loadData()
-    window.addEventListener('avukatim-store-update', handleUpdate)
-    return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [])
 
-  const calDays = getCalendarDays(viewYear, viewMonth, collections)
+  const calDays = getCalendarDays(viewYear, viewMonth, collections, hearings, deadlines)
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }

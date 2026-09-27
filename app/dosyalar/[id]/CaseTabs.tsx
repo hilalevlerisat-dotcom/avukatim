@@ -42,12 +42,16 @@ export default function CaseTabs({
   const [hearingDialogOpen, setHearingDialogOpen] = useState(false)
   const [deadlineDialogOpen, setDeadlineDialogOpen] = useState(false)
   const [financeDialogOpen, setFinanceDialogOpen] = useState(false)
+  const [userId, setUserId] = useState<string>('demo-user-id')
 
   // Listen to store updates
   useEffect(() => {
     setMounted(true)
     const fetchDocs = async () => {
       const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setUserId(user.id)
+      
       const { data } = await supabase.from('documents').select('*').eq('case_id', caseId)
       if (data) setDocuments(data as Document[])
     }
@@ -190,7 +194,7 @@ export default function CaseTabs({
             </div>
             <div className="p-4">
               <UploadZone
-                userId="demo-user-id"
+                userId={userId}
                 caseId={caseId}
                 clientId={clientId}
                 onUploadComplete={(docs) => {

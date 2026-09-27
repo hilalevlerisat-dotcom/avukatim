@@ -169,9 +169,39 @@ export default function UploadZone({
   const [matchState, setMatchState] = useState<MatchState | null>(null)
   const [items, setItems] = useState<UploadItem[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [globalError, setGlobalError] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+  const ALLOWED_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'image/jpeg', 'image/png', 'image/tiff', 'application/octet-stream']
+  const ALLOWED_EXTS = ['.pdf', '.docx', '.doc', '.xlsx', '.xls', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.udf']
+
+  const validateFiles = (files: FolderFile[]): FolderFile[] => {
+    setGlobalError(null)
+    const validFiles: FolderFile[] = []
+    const errors: string[] = []
+
+    files.forEach(({ file, relativePath }) => {
+      const ext = '.' + (file.name.split('.').pop()?.toLowerCase() || '')
+      if (!ALLOWED_EXTS.includes(ext) && !ALLOWED_TYPES.includes(file.type)) {
+        errors.push(`${file.name} desteklenmeyen bir dosya formatı.`)
+        return
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        errors.push(`${file.name} boyutu 50MB'den büyük.`)
+        return
+      }
+      validFiles.push({ file, relativePath })
+    })
+
+    if (errors.length > 0) {
+      setGlobalError(errors.join(' '))
+      setTimeout(() => setGlobalError(null), 5000)
+    }
+    return validFiles
+  }
 
   // ── Dosya listesi oluştur ─────────────────────────────────────────────────
   function buildUploadItems(
@@ -200,8 +230,9 @@ export default function UploadZone({
     e.preventDefault()
     setIsDragging(false)
 
-    const { folderName, files } = await readDroppedItems(e.dataTransfer)
-
+    const { folderName, files: droppedFiles } = await readDroppedItems(e.dataTransfer)
+    
+    const files = validateFiles(droppedFiles)
     if (!files.length) return
 
     // Önceden müvekkil seçiliyse direkt yüklemeye geç
@@ -229,10 +260,11 @@ export default function UploadZone({
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files
     if (!fileList?.length) return
-    const folderFiles: FolderFile[] = Array.from(fileList).map(f => ({
+    const folderFiles = validateFiles(Array.from(fileList).map(f => ({
       file: f,
       relativePath: f.webkitRelativePath || f.name,
-    }))
+    })))
+    if (!folderFiles.length) return
 
     const clientId = propClientId ?? 'genel'
     const uploadItems = buildUploadItems(folderFiles, clientId, propCaseId ?? null)
@@ -281,7 +313,7 @@ export default function UploadZone({
         continue
       }
 
-      // Documents tablosuna kaydet veya yerel depoya ekle
+      // Documents tablosuna kaydet
       let docToSave: Document | null = null
 
       if (isSupabaseConfigured()) {
@@ -305,15 +337,24 @@ export default function UploadZone({
             .select()
             .single()
 
-          if (!dbError && doc) {
+          if (dbError) {
+            setItems(prev => prev.map(p =>
+              p.id === item.id ? { ...p, status: 'error', progress: 0, error: 'Veritabanına kaydedilemedi: ' + dbError.message } : p
+            ))
+            continue
+          }
+          if (doc) {
             docToSave = doc as Document
           }
         } catch (e) {
-          console.warn('Supabase DB insert error, using local document store', e)
+          console.warn('Supabase DB insert error', e)
+          setItems(prev => prev.map(p =>
+            p.id === item.id ? { ...p, status: 'error', progress: 0, error: 'Bilinmeyen veritabanı hatası' } : p
+          ))
+          continue
         }
-      }
-
-      if (!docToSave) {
+      } else {
+        // Mock Store fallback for offline mode
         docToSave = {
           id: crypto.randomUUID(),
           user_id: userId || 'demo-user-id',
@@ -329,15 +370,16 @@ export default function UploadZone({
           uploaded_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         }
+        saveDocumentToStore(docToSave)
       }
-
-      saveDocumentToStore(docToSave!)
 
       setItems(prev => prev.map(p =>
         p.id === item.id ? { ...p, status: 'done', progress: 100 } : p
       ))
 
-      uploadedDocs.push(docToSave!)
+      if (docToSave) {
+        uploadedDocs.push(docToSave)
+      }
     }
 
     setIsUploading(false)
@@ -361,6 +403,21 @@ export default function UploadZone({
             onConfirm={handleMatchConfirm}
             onCancel={() => setMatchState(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ── Hata Mesajı ─────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {globalError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start gap-2"
+          >
+            <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">{globalError}</p>
+          </motion.div>
         )}
       </AnimatePresence>
 

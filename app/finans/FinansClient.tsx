@@ -170,7 +170,8 @@ export default function FinansClient() {
           return (
             <TabsContent key={tab} value={tab} className="mt-4">
               <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/50 bg-muted/30">
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Müvekkil</th>
@@ -272,7 +273,8 @@ export default function FinansClient() {
                       </tr>
                     </tfoot>
                   )}
-                </table>
+                  </table>
+                </div>
               </div>
             </TabsContent>
           )

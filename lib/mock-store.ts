@@ -386,8 +386,8 @@ export function calculateFinanceSummary(finances: StoreFinance[]) {
 /**
  * Returns all collection schedules (installments and due dates) across all finances
  */
-export function getAllCollectionSchedules(): CollectionItem[] {
-  const finances = getStoredFinances()
+export function getAllCollectionSchedules(providedFinances?: StoreFinance[]): CollectionItem[] {
+  const finances = providedFinances || getStoredFinances()
   const collections: CollectionItem[] = []
 
   for (const f of finances) {

@@ -11,10 +11,9 @@ import type { ReminderStatus } from '@/lib/database.types'
 import { 
   getAllCollectionSchedules, 
   markCollectionAsPaid, 
-  getStoredClients, 
-  getStoredCases, 
   type CollectionItem 
 } from '@/lib/mock-store'
+import { createClient } from '@/lib/supabase/client'
 
 type ReminderRow = {
   id: string; title: string; description: string | null
@@ -33,17 +32,27 @@ export default function HatirlaticilarClient() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [filterTab, setFilterTab] = useState<'all' | 'collections' | 'reminders'>('all')
 
-  const loadData = () => {
-    setCollections(getAllCollectionSchedules())
-    setClients(getStoredClients().map(c => ({ id: c.id, full_name: c.full_name })))
-    setCases(getStoredCases().map(c => ({ id: c.id, title: c.title })))
+  const [loading, setLoading] = useState(true)
+
+  const loadData = async () => {
+    setLoading(true)
+    const supabase = createClient()
+    const [financesRes, clientsRes, casesRes, remindersRes] = await Promise.all([
+      supabase.from('finance_records').select('*').order('transaction_date', { ascending: false }),
+      supabase.from('clients').select('id, full_name'),
+      supabase.from('cases').select('id, title'),
+      supabase.from('reminders').select('*').order('remind_at', { ascending: true })
+    ])
+
+    if (financesRes.data) setCollections(getAllCollectionSchedules(financesRes.data as any))
+    if (clientsRes.data) setClients(clientsRes.data)
+    if (casesRes.data) setCases(casesRes.data)
+    if (remindersRes.data) setReminders(remindersRes.data as ReminderRow[])
+    setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-    const handleUpdate = () => loadData()
-    window.addEventListener('avukatim-store-update', handleUpdate)
-    return () => window.removeEventListener('avukatim-store-update', handleUpdate)
   }, [])
 
   const pendingCollections = collections.filter(c => !c.is_paid)
@@ -54,15 +63,34 @@ export default function HatirlaticilarClient() {
 
   const totalPending = pendingReminders.length + pendingCollections.length
 
-  const dismiss = (id: string) => setReminders(prev =>
-    prev.map(r => r.id === id ? { ...r, status: 'dismissed' as ReminderStatus } : r)
-  )
-  const complete = (id: string) => setReminders(prev =>
-    prev.map(r => r.id === id ? { ...r, status: 'sent' as ReminderStatus } : r)
-  )
+  const dismiss = async (id: string) => {
+    const supabase = createClient()
+    await supabase.from('reminders').update({ status: 'dismissed' }).eq('id', id)
+    setReminders(prev => prev.map(r => r.id === id ? { ...r, status: 'dismissed' as ReminderStatus } : r))
+  }
+  const complete = async (id: string) => {
+    const supabase = createClient()
+    await supabase.from('reminders').update({ status: 'sent' }).eq('id', id)
+    setReminders(prev => prev.map(r => r.id === id ? { ...r, status: 'sent' as ReminderStatus } : r))
+  }
 
-  const handleCollect = (financeId: string, installmentId?: string) => {
-    markCollectionAsPaid(financeId, installmentId, true)
+  const handleCollect = async (financeId: string, installmentId?: string) => {
+    // Note: Since collection marking involves complex JSON updates for installments,
+    // we should really update the row in Supabase here.
+    // For now, to keep the UI responsive, we will just call loadData after a mock update or implement full logic later.
+    // Let's implement full logic:
+    const supabase = createClient()
+    const record = (await supabase.from('finance_records').select('*').eq('id', financeId).single()).data
+    if (record) {
+      if (installmentId && record.has_installments && record.installments) {
+        const updatedInstallments = record.installments.map((i: any) => 
+          i.id === installmentId ? { ...i, is_paid: true, paid_date: new Date().toISOString() } : i
+        )
+        await supabase.from('finance_records').update({ installments: updatedInstallments }).eq('id', financeId)
+      } else {
+        await supabase.from('finance_records').update({ is_collected: true }).eq('id', financeId)
+      }
+    }
     loadData()
   }
 
@@ -239,7 +267,30 @@ export default function HatirlaticilarClient() {
         onClose={() => setDialogOpen(false)}
         clients={clients}
         cases={cases}
-        onCreated={r => setReminders(prev => [r, ...prev])}
+        onCreated={async (r) => {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) return
+
+          const client = clients.find(c => c.full_name === r.client_name)
+          const cas = cases.find(c => c.title === r.case_title)
+          
+          const { data } = await supabase.from('reminders').insert({
+            user_id: user.id,
+            title: r.title,
+            description: r.description,
+            remind_at: r.remind_at,
+            status: r.status,
+            client_name: r.client_name,
+            case_title: r.case_title,
+            is_recurring: r.is_recurring,
+            recurrence_days: r.recurrence_days
+          }).select().single()
+
+          if (data) {
+            setReminders(prev => [data as ReminderRow, ...prev])
+          }
+        }}
       />
     </div>
   )

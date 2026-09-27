@@ -7,11 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import Link from 'next/link'
 import CaseTabs from './CaseTabs'
-import { CategoryBadge, StatusBadge } from '../components'
+import { CategoryBadge, StatusBadge } from '@/components/ui/status-badge'
 import { formatDate, formatCurrency } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import EditCaseButton from '@/components/forms/EditCaseButton'
+import EditCaseButton from './EditCaseButton'
 
 export default function DosyaDetayPage({ params }: { params: Promise<{ id: string }> }) {
   const unwrappedParams = use(params)

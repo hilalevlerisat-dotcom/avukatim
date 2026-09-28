@@ -77,7 +77,6 @@ export default function FinansClient() {
         case_id: rec.case_id || null,
         finance_type: rec.finance_type,
         amount: inst.amount,
-        currency: 'TRY',
         transaction_date: rec.transaction_date,
         due_date: inst.due_date,
         description: rec.description ? `${rec.description} (${idx + 1}. Taksit)` : `${idx + 1}. Taksit`,
@@ -91,7 +90,6 @@ export default function FinansClient() {
         case_id: rec.case_id || null,
         finance_type: rec.finance_type,
         amount: rec.amount,
-        currency: 'TRY',
         transaction_date: rec.transaction_date,
         due_date: rec.due_date,
         description: rec.description,
@@ -151,7 +149,6 @@ export default function FinansClient() {
       case_id: rec.case_id || null,
       finance_type: rec.finance_type || 'court_fee',
       amount: rec.amount,
-      currency: rec.currency || 'TRY',
       transaction_date: rec.transaction_date,
       description: rec.description || null,
     }))

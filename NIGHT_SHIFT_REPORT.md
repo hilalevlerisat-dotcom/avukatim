@@ -29,5 +29,11 @@ Kapsamlı bir "Gece Vardiyası" operasyonu gerçekleştirildi. Mobil uyumluluk, 
 ### 4. Supabase DB Güvenlik ve Kuralları
 - İşlemler esnasında RLS kuralları denetlenerek verilerin yalnızca yetkili kullanıcıya (`activeUserId`) atanması sağlandı. 
 
+### 5. UYAP & Otomasyon Entegrasyonları (MasrafX Araştırması Sonrası)
+- **Güvenlik Yedeklemesi:** Tüm geliştirmelere başlamadan önce, projenin tamamen çalışan ve stabil olan son halinin (node_modules hariç) `avukatim-yedek` klasörüne yedeği alındı (`robocopy` ile).
+- **UYAP Excel / UDF İçeri Aktarım (Bulk Import) Altyapısı:** Finans (`FinansClient.tsx`) modülüne **UYAP Excel İçeri Aktar** butonu eklendi. Avukatların UYAP'tan indirdikleri harç ve masraf döküm excellerini okuyup doğrudan müvekkil cari hesaplarına otomatik işleyebilmesi için `UyapImportDialog.tsx` adında yeni bir bileşen inşa edildi. (Excel ayrıştırması için `xlsx` kütüphanesi entegre edildi).
+- **İade Alınabilir Avans Uyarısı:** MasrafX araştırmasından elde edilen vizyonla, `dosyalar/[id]/page.tsx` ekranına akıllı bir uyarı eklendi. Dosya statüsü "Kapalı (closed)" olan dosyalarda, sistem avukata otomatik olarak "İade Alınabilir Gider Avansı Kontrolü" uyarısı gösteriyor. Bu sayede atıl durumdaki paraların tahsil edilmesi hızlanıyor.
+- **Tip Güvenliği (TypeScript):** Takvim ve Finans istemcilerindeki Typescript derleme (build) sorunları çözüldü (`npx tsc --noEmit` hatasız hale getirildi).
+
 ---
-**Sonuç:** Tüm UI problemleri (tabloların mobilde taşması), dosya yükleme validasyonları (50mb ve tip kontrolü) ve Supabase (Hatırlatıcı/Takvim) entegrasyonu başarılı bir şekilde otonom olarak kodlanıp sisteme eklendi. Testler sırasında herhangi bir mevcut (production) veri bozulmamıştır. Mükemmel bir şekilde canlı ortama deploy edilmeye hazır hale getirildi.
+**Sonuç:** Gece vardiyasında sistemin UI/UX hataları giderildi, dosya yükleme süreçleri güçlendirildi, Supabase geçişi tamamlandı ve UYAP Excel içeri aktarma gibi devrimsel bir otomasyon sisteme başarıyla entegre edildi. Projenin bir yedeği güvende, güncel kodlar ise hatasız (build-passing) durumdadır.

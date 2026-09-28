@@ -141,6 +141,22 @@ export default function TakvimClient() {
     loadData()
   }, [])
 
+  const handleCollect = async (financeId: string, installmentId?: string) => {
+    const supabase = createClient()
+    if (installmentId) {
+      const { data: rec } = await supabase.from('finance_records').select('installments').eq('id', financeId).single()
+      if (rec?.installments) {
+        const updated = rec.installments.map((i: any) => 
+          i.id === installmentId ? { ...i, is_paid: true, paid_date: new Date().toISOString().split('T')[0] } : i
+        )
+        await supabase.from('finance_records').update({ installments: updated }).eq('id', financeId)
+      }
+    } else {
+      await supabase.from('finance_records').update({ is_collected: true }).eq('id', financeId)
+    }
+    loadData()
+  }
+
   const calDays = getCalendarDays(viewYear, viewMonth, collections, hearings, deadlines)
 
   const prevMonth = () => {
@@ -164,8 +180,8 @@ export default function TakvimClient() {
     setSelectedDay(prev => prev?.fullDate === day.fullDate ? null : day)
   }
 
-  const upcomingHearings = MOCK_HEARINGS.filter(h => !h.is_completed).sort((a, b) => a.hearing_date.localeCompare(b.hearing_date))
-  const upcomingDeadlines = MOCK_DEADLINES.filter(d => !d.is_completed).sort((a, b) => a.due_date.localeCompare(b.due_date))
+  const upcomingHearings = hearings.filter((h: HearingItem) => !h.is_completed).sort((a: HearingItem, b: HearingItem) => a.hearing_date.localeCompare(b.hearing_date))
+  const upcomingDeadlines = deadlines.filter((d: DeadlineItem) => !d.is_completed).sort((a: DeadlineItem, b: DeadlineItem) => a.due_date.localeCompare(b.due_date))
   const upcomingCollections = collections.filter(c => !c.is_paid).sort((a, b) => a.due_date.localeCompare(b.due_date))
 
   return (
@@ -353,8 +369,7 @@ export default function TakvimClient() {
                               variant="outline"
                               className="h-6 text-[10px] px-2 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/15"
                               onClick={() => {
-                                markCollectionAsPaid(c.finance_id, c.installment_id, true)
-                                loadData()
+                                handleCollect(c.finance_id, c.installment_id)
                               }}
                             >
                               Tahsil Edildi
@@ -388,7 +403,7 @@ export default function TakvimClient() {
                   Yaklaşan duruşma bulunmuyor.
                 </div>
               ) : (
-                upcomingHearings.map(h => {
+                upcomingHearings.map((h: HearingItem) => {
                   const days = daysFromNow(h.hearing_date)
                   const urgency = urgencyLabel(days)
                   return (
@@ -452,7 +467,7 @@ export default function TakvimClient() {
                   Takip edilen süre bulunmuyor.
                 </div>
               ) : (
-                upcomingDeadlines.map(d => {
+                upcomingDeadlines.map((d: DeadlineItem) => {
                   const days = daysFromNow(d.due_date)
                   const urgency = urgencyLabel(days)
                   return (
@@ -471,7 +486,7 @@ export default function TakvimClient() {
                       </div>
                       <p className="text-[11px] text-muted-foreground mt-1">{d.client_name} • {d.case_title}</p>
                       <div className="flex items-center justify-between mt-1.5">
-                        <Badge variant="outline" className="text-[10px] h-4 px-1.5">{DEADLINE_TYPE_LABELS[d.deadline_type]}</Badge>
+                        <Badge variant="outline" className="text-[10px] h-4 px-1.5">{DEADLINE_TYPE_LABELS[d.deadline_type as keyof typeof DEADLINE_TYPE_LABELS]}</Badge>
                         <span className="text-[10px] text-muted-foreground">{formatDate(d.due_date)}</span>
                       </div>
                     </div>
@@ -530,8 +545,7 @@ export default function TakvimClient() {
                         className="h-5 text-[10px] px-1.5 text-emerald-600 hover:bg-emerald-500/10"
                         onClick={(e) => {
                           e.stopPropagation()
-                          markCollectionAsPaid(c.finance_id, c.installment_id, true)
-                          loadData()
+                          handleCollect(c.finance_id, c.installment_id)
                         }}
                       >
                         Tahsil Et

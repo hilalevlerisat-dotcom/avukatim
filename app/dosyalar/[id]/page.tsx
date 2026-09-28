@@ -1,7 +1,7 @@
 'use client'
 
 import { use, useEffect, useState } from 'react'
-import { ArrowLeft, User, Scale, Hash, Calendar } from 'lucide-react'
+import { ArrowLeft, User, Scale, Hash, Calendar, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -74,6 +74,16 @@ export default function DosyaDetayPage({ params }: { params: Promise<{ id: strin
           }}
         />
       </div>
+
+      {caseData.status === 'closed' && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400">İade Alınabilir Gider Avansı Kontrolü</h4>
+            <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">Bu dosya kapandığı için UYAP üzerinde veya veznede atıl kalmış gider avanslarınız bulunabilir. Lütfen UYAP üzerinden veya MasrafX excel dökümünden iadesi talep edilebilir avanslarınızı kontrol ediniz.</p>
+          </div>
+        </div>
+      )}
 
       {/* Hızlı bilgi kartları */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

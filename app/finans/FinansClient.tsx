@@ -10,6 +10,7 @@ import { formatCurrency, formatDate, FINANCE_TYPE_LABELS, FINANCE_TYPE_COLORS } 
 import { cn } from '@/lib/utils'
 import NewFinanceDialog from '@/components/forms/NewFinanceDialog'
 import EditFinanceDialog from '@/components/forms/EditFinanceDialog'
+import UyapImportDialog from '@/components/forms/UyapImportDialog'
 import type { FinanceType } from '@/lib/database.types'
 import { 
   getStoredFinances, 
@@ -27,6 +28,7 @@ export default function FinansClient() {
   const [clients, setClients] = useState<any[]>([])
   const [cases, setCases] = useState<any[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [uyapDialogOpen, setUyapDialogOpen] = useState(false)
   const [editingFinance, setEditingFinance] = useState<StoreFinance | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -87,6 +89,13 @@ export default function FinansClient() {
     loadData()
   }
 
+  const handleUyapImport = async (newRecords: any[]) => {
+    const supabase = createClient()
+    const recordsToInsert = newRecords.map(rec => ({ ...rec, id: undefined }))
+    await supabase.from('finance_records').insert(recordsToInsert)
+    loadData()
+  }
+
   if (loading) return <div className="p-8 text-center animate-pulse">Yükleniyor...</div>
 
   return (
@@ -101,9 +110,14 @@ export default function FinansClient() {
             <p className="text-xs text-muted-foreground">Vekalet ücretleri, taksit planları ve tahsilat takibi</p>
           </div>
         </div>
-        <Button id="new-finance-btn" className="gap-2 h-9" onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4" />Kayıt Ekle
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-2 h-9 border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" onClick={() => setUyapDialogOpen(true)}>
+            <TrendingDown className="w-4 h-4" /> UYAP Excel İçeri Aktar
+          </Button>
+          <Button id="new-finance-btn" className="gap-2 h-9" onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4" /> Kayıt Ekle
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -295,6 +309,14 @@ export default function FinansClient() {
         record={editingFinance}
         onSaved={handleUpdated}
         onDeleted={handleDeleted}
+      />
+
+      <UyapImportDialog
+        open={uyapDialogOpen}
+        onClose={() => setUyapDialogOpen(false)}
+        clients={clients}
+        cases={cases}
+        onImportComplete={handleUyapImport}
       />
     </div>
   )

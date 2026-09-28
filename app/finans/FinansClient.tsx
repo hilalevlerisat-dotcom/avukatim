@@ -41,9 +41,19 @@ export default function FinansClient() {
       supabase.from('cases').select('id, title, client_id')
     ])
     
-    if (financesRes.data) setRecords(financesRes.data as any)
     if (clientsRes.data) setClients(clientsRes.data)
     if (casesRes.data) setCases(casesRes.data)
+    
+    if (financesRes.data && clientsRes.data && casesRes.data) {
+      const enrichedRecords = financesRes.data.map(f => ({
+        ...f,
+        client_name: clientsRes.data.find(c => c.id === f.client_id)?.full_name || 'Bilinmiyor',
+        case_title: casesRes.data.find(c => c.id === f.case_id)?.title || null
+      }))
+      setRecords(enrichedRecords as any)
+    } else if (financesRes.data) {
+      setRecords(financesRes.data as any)
+    }
     setLoading(false)
   }
 
@@ -57,13 +67,54 @@ export default function FinansClient() {
 
   const handleCreated = async (rec: any) => {
     const supabase = createClient()
-    await supabase.from('finance_records').insert({ ...rec, id: undefined })
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'demo-user-id'
+
+    if (rec.has_installments && rec.installments?.length > 0) {
+      const inserts = rec.installments.map((inst: any, idx: number) => ({
+        user_id: userId,
+        client_id: rec.client_id,
+        case_id: rec.case_id || null,
+        finance_type: rec.finance_type,
+        amount: inst.amount,
+        currency: 'TRY',
+        transaction_date: rec.transaction_date,
+        due_date: inst.due_date,
+        description: rec.description ? `${rec.description} (${idx + 1}. Taksit)` : `${idx + 1}. Taksit`,
+        payment_method: rec.payment_method
+      }))
+      await supabase.from('finance_records').insert(inserts)
+    } else {
+      const insertObj = {
+        user_id: userId,
+        client_id: rec.client_id,
+        case_id: rec.case_id || null,
+        finance_type: rec.finance_type,
+        amount: rec.amount,
+        currency: 'TRY',
+        transaction_date: rec.transaction_date,
+        due_date: rec.due_date,
+        description: rec.description,
+        payment_method: rec.payment_method
+      }
+      await supabase.from('finance_records').insert(insertObj)
+    }
     loadData()
   }
 
   const handleUpdated = async (rec: any) => {
     const supabase = createClient()
-    await supabase.from('finance_records').update(rec).eq('id', rec.id)
+    const updateObj = {
+        client_id: rec.client_id,
+        case_id: rec.case_id || null,
+        finance_type: rec.finance_type,
+        amount: rec.amount,
+        transaction_date: rec.transaction_date,
+        due_date: rec.due_date,
+        description: rec.description,
+        payment_method: rec.payment_method
+    }
+    await supabase.from('finance_records').update(updateObj).eq('id', rec.id)
     loadData()
   }
 
@@ -91,8 +142,25 @@ export default function FinansClient() {
 
   const handleUyapImport = async (newRecords: any[]) => {
     const supabase = createClient()
-    const recordsToInsert = newRecords.map(rec => ({ ...rec, id: undefined }))
-    await supabase.from('finance_records').insert(recordsToInsert)
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id || 'demo-user-id'
+
+    const recordsToInsert = newRecords.map(rec => ({
+      user_id: userId,
+      client_id: rec.client_id,
+      case_id: rec.case_id || null,
+      finance_type: rec.finance_type || 'court_fee',
+      amount: rec.amount,
+      currency: rec.currency || 'TRY',
+      transaction_date: rec.transaction_date,
+      description: rec.description || null,
+    }))
+    
+    const { error } = await supabase.from('finance_records').insert(recordsToInsert)
+    if (error) {
+      console.error('UYAP Import Error:', error)
+      alert('Kayıt eklenirken hata oluştu: ' + error.message)
+    }
     loadData()
   }
 

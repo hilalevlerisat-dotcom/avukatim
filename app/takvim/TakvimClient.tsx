@@ -127,14 +127,48 @@ export default function TakvimClient() {
 
   const loadData = async () => {
     const supabase = createClient()
-    const [financesRes, hearingsRes, deadlinesRes] = await Promise.all([
+    const [financesRes, hearingsRes, deadlinesRes, clientsRes, casesRes] = await Promise.all([
       supabase.from('finance_records').select('*'),
       supabase.from('hearings').select('*'),
-      supabase.from('deadlines').select('*')
+      supabase.from('deadlines').select('*'),
+      supabase.from('clients').select('id, full_name'),
+      supabase.from('cases').select('id, title, client_id')
     ])
-    if (financesRes.data) setCollections(getAllCollectionSchedules(financesRes.data as any))
-    if (hearingsRes.data) setHearings(hearingsRes.data as HearingItem[])
-    if (deadlinesRes.data) setDeadlines(deadlinesRes.data as DeadlineItem[])
+
+    if (financesRes.data && clientsRes.data && casesRes.data) {
+      const enrichedFinances = financesRes.data.map(f => ({
+        ...f,
+        client_name: clientsRes.data.find(c => c.id === f.client_id)?.full_name || 'Bilinmiyor',
+        case_title: casesRes.data.find(c => c.id === f.case_id)?.title || null
+      }))
+      setCollections(getAllCollectionSchedules(enrichedFinances as any))
+    }
+
+    if (hearingsRes.data && clientsRes.data && casesRes.data) {
+      const enrichedHearings = hearingsRes.data.map(h => {
+        const cas = casesRes.data.find(c => c.id === h.case_id)
+        const client = clientsRes.data.find(c => c.id === cas?.client_id)
+        return {
+          ...h,
+          case_title: cas?.title || 'Genel',
+          client_name: client?.full_name || 'Bilinmiyor'
+        }
+      })
+      setHearings(enrichedHearings as HearingItem[])
+    }
+
+    if (deadlinesRes.data && clientsRes.data && casesRes.data) {
+      const enrichedDeadlines = deadlinesRes.data.map(d => {
+        const cas = casesRes.data.find(c => c.id === d.case_id)
+        const client = clientsRes.data.find(c => c.id === cas?.client_id)
+        return {
+          ...d,
+          case_title: cas?.title || 'Genel',
+          client_name: client?.full_name || 'Bilinmiyor'
+        }
+      })
+      setDeadlines(enrichedDeadlines as DeadlineItem[])
+    }
   }
 
   useEffect(() => {

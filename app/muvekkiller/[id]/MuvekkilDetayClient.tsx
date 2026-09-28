@@ -105,7 +105,7 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
     )
   }
 
-  const { totalRetainer, totalPaid, remaining, paidPct } = calculateFinanceSummary(finances)
+  const { totalRetainer, totalPaid, balance, paidPct } = calculateFinanceSummary(finances)
 
   const handleClientSaved = async (updated: StoreClient, newRetainer?: number) => {
     const supabase = createClient()
@@ -259,14 +259,14 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Kalan</p>
+                <p className="text-xs text-muted-foreground">Bakiye</p>
                 <p
                   className={cn(
                     'text-base font-bold',
-                    remaining > 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
+                    balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
                   )}
                 >
-                  {formatCurrency(remaining)}
+                  {formatCurrency(balance)}
                 </p>
               </div>
             </div>

@@ -377,10 +377,14 @@ export function calculateFinanceSummary(finances: StoreFinance[]) {
     .filter(f => ['expense', 'court_fee'].includes(f.finance_type))
     .reduce((sum, f) => sum + f.amount, 0)
 
-  const remaining = Math.max(0, totalRetainer - totalPaid)
-  const paidPct = totalRetainer > 0 ? Math.min(100, Math.round((totalPaid / totalRetainer) * 100)) : 0
+  // Bakiye (Balance) = Ödenen - (Sözleşme + Giderler)
+  // Negatif bakiye = Borç (Müvekkilin ödemesi gereken)
+  // Pozitif bakiye = Alacaklı (Müvekkil fazla ödemiş)
+  const balance = totalPaid - (totalRetainer + totalExpense)
+  const remaining = Math.max(0, (totalRetainer + totalExpense) - totalPaid)
+  const paidPct = (totalRetainer + totalExpense) > 0 ? Math.min(100, Math.round((totalPaid / (totalRetainer + totalExpense)) * 100)) : 0
 
-  return { totalRetainer, totalPaid, totalExpense, remaining, paidPct }
+  return { totalRetainer, totalPaid, totalExpense, remaining, paidPct, balance }
 }
 
 /**

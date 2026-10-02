@@ -15,8 +15,10 @@ import {
   FileText,
   AlertCircle,
   Loader2,
-  RefreshCw,
-  Database
+  Database,
+  Download,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react'
 import EmsalDetailModal from './EmsalDetailModal'
 
@@ -50,6 +52,45 @@ export default function EmsalSearch() {
   // Seed loading state
   const [seeding, setSeeding] = useState(false)
   const [seedMessage, setSeedMessage] = useState<string | null>(null)
+
+  // HuggingFace import state
+  const [showImportPanel, setShowImportPanel] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState<string | null>(null)
+  const [importConfig, setImportConfig] = useState<'yargitay' | 'danistay' | 'emsal'>('yargitay')
+  const [importLimit, setImportLimit] = useState(10)
+  const [importOffset, setImportOffset] = useState(0)
+  const [importMinYear, setImportMinYear] = useState(2020)
+  const [importCourtFilter, setImportCourtFilter] = useState('')
+
+  const handleImportFromHuggingFace = async () => {
+    setImporting(true)
+    setImportMsg(null)
+    try {
+      const res = await fetch('/api/ai/emsal/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          config: importConfig,
+          limit: importLimit,
+          offset: importOffset,
+          minYear: importMinYear,
+          courtFilter: importCourtFilter || null,
+          generateSummaries: true
+        })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setImportMsg(`✅ ${data.message}`)
+      } else {
+        setImportMsg(`❌ ${data.error || 'İçe aktarma başarısız.'}`)
+      }
+    } catch (err: any) {
+      setImportMsg(`❌ Hata: ${err.message}`)
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const handleSearch = async (searchQuery: string = query) => {
     const q = searchQuery.trim()
@@ -137,18 +178,28 @@ export default function EmsalSearch() {
             </span>
           </div>
           Bu sistem sıradan yapay zekalar gibi karar numarası uydurmaz. Gemini vektör modeliyle sorunuzun hukuki anlamını çözer, Supabase veritabanındaki <strong>doğrulanmış gerçek Yargıtay/Danıştay kararlarını</strong> çeker ve sadece bu kararlara dayanarak hukuki analiz üretir.
+          <div className="mt-1 text-[11px] opacity-80">📂 Kaynak: Yargıtay, Danıştay, UYAP Emsal, AYM — <strong>11 Milyon+ Gerçek Karar</strong> (CC0 Lisanslı Açık Veri)</div>
         </div>
         
-        {/* Seed helper button */}
-        <button
-          onClick={handleSeed}
-          disabled={seeding}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-background/80 hover:bg-emerald-500/20 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 transition-colors"
-          title="Veritabanına örnek emsal kararları yükler"
-        >
-          {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-          {seeding ? 'Yükleniyor...' : 'Örnek Kararları Yükle'}
-        </button>
+        <div className="flex flex-col gap-1.5 flex-shrink-0">
+          <button
+            onClick={handleSeed}
+            disabled={seeding}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-background/80 hover:bg-emerald-500/20 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 transition-colors"
+            title="8 adet örnek emsal karar yükler"
+          >
+            {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+            {seeding ? 'Yükleniyor...' : 'Örnek Kararları Yükle'}
+          </button>
+          <button
+            onClick={() => setShowImportPanel(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-background/80 hover:bg-indigo-500/20 text-[11px] font-medium text-indigo-700 dark:text-indigo-300 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {showImportPanel ? 'Aktarım Panelini Kapat' : 'Gerçek Kararları Aktar'}
+            {showImportPanel ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+        </div>
       </div>
 
       {seedMessage && (
@@ -156,6 +207,116 @@ export default function EmsalSearch() {
           {seedMessage}
         </div>
       )}
+
+      {/* HuggingFace Import Panel */}
+      <AnimatePresence>
+        {showImportPanel && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-card border border-indigo-500/30 rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-sm text-foreground">Yargıtay / Danıştay Kararlarını Aktar</h4>
+                    <p className="text-[11px] text-muted-foreground">
+                      Kaynak: <a href="https://huggingface.co/datasets/mrfg/turkish-court-decisions" target="_blank" rel="noopener noreferrer" className="text-indigo-500 underline hover:no-underline">mrfg/turkish-court-decisions</a> — 11M+ Gerçek Karar, CC0 Lisanslı (ücretsiz, açık veri)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-[11px] font-medium text-foreground mb-1">Kaynak</label>
+                  <select
+                    value={importConfig}
+                    onChange={e => setImportConfig(e.target.value as any)}
+                    className="w-full rounded-xl border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  >
+                    <option value="yargitay">Yargıtay (9.8M+)</option>
+                    <option value="danistay">Danıştay (835K+)</option>
+                    <option value="emsal">UYAP Emsal (283K+)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-foreground mb-1">Kaç Karar? (Max 50)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={importLimit}
+                    onChange={e => setImportLimit(Number(e.target.value))}
+                    className="w-full rounded-xl border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-foreground mb-1">Min. Yıl</label>
+                  <input
+                    type="number"
+                    min={2000}
+                    max={2026}
+                    value={importMinYear}
+                    onChange={e => setImportMinYear(Number(e.target.value))}
+                    className="w-full rounded-xl border border-border bg-background px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-foreground mb-1">Daire Filtresi</label>
+                  <input
+                    type="text"
+                    value={importCourtFilter}
+                    onChange={e => setImportCourtFilter(e.target.value)}
+                    placeholder="Örn: 9. Hukuk"
+                    className="w-full rounded-xl border border-border bg-background px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-[11px] text-muted-foreground">
+                  💡 <strong>Offset:</strong>
+                  <input
+                    type="number"
+                    min={0}
+                    value={importOffset}
+                    onChange={e => setImportOffset(Number(e.target.value))}
+                    className="inline-block w-20 ml-1.5 rounded-lg border border-border bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
+                  />
+                  <span className="ml-1">(daha fazla karar için değiştir)</span>
+                </div>
+
+                <button
+                  onClick={handleImportFromHuggingFace}
+                  disabled={importing}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all"
+                >
+                  {importing ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" />Aktarılıyor & Vektörleşiyor...</>
+                  ) : (
+                    <><Download className="w-3.5 h-3.5" />{importLimit} Karar Aktar</>
+                  )}
+                </button>
+              </div>
+
+              {importMsg && (
+                <div className="p-3 rounded-xl bg-muted/30 border border-border text-xs text-foreground leading-relaxed">
+                  {importMsg}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Search Input Box */}
       <div className="bg-card border border-border/70 rounded-2xl p-5 shadow-sm space-y-4">

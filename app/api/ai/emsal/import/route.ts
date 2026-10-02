@@ -85,36 +85,54 @@ export async function POST(req: Request) {
     const actualLimit = Math.min(Number(limit), 50);
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    // HuggingFace Datasets API çağrısı (ücretsiz, API key gerekmez)
-    const hfUrl = new URL(HUGGINGFACE_API);
-    hfUrl.searchParams.set('dataset', DATASET);
-    hfUrl.searchParams.set('config', config);
-    hfUrl.searchParams.set('split', 'train');
-    hfUrl.searchParams.set('offset', String(offset));
-    hfUrl.searchParams.set('length', String(Math.min(actualLimit * 5, 100))); // Daha fazla çek, filtreleyeceğiz (Max 100)
+    // Maksimum 10 sayfa (1000 kayıt) tarayarak uygun olanları bulmaya çalış
+    let rows: any[] = [];
+    let currentOffset = Number(offset);
+    let attempts = 0;
+    const maxAttempts = 10;
+    let totalAvailable = 0;
 
-    const hfRes = await fetch(hfUrl.toString(), {
-      headers: { 'Accept': 'application/json' },
-      signal: AbortSignal.timeout(30000)
-    });
+    while (rows.length < actualLimit && attempts < maxAttempts) {
+      const hfUrl = new URL(HUGGINGFACE_API);
+      hfUrl.searchParams.set('dataset', DATASET);
+      hfUrl.searchParams.set('config', config);
+      hfUrl.searchParams.set('split', 'train');
+      hfUrl.searchParams.set('offset', String(currentOffset));
+      hfUrl.searchParams.set('length', '100'); // Her seferinde 100 çek (API max limit)
 
-    if (!hfRes.ok) {
-      throw new Error(`HuggingFace API hatası: ${hfRes.status} ${hfRes.statusText}`);
-    }
+      const hfRes = await fetch(hfUrl.toString(), {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(10000)
+      });
 
-    const hfData = await hfRes.json();
-    let rows: any[] = hfData.rows?.map((r: any) => r.row) || [];
+      if (!hfRes.ok) {
+        if (attempts === 0) throw new Error(`HuggingFace API hatası: ${hfRes.status} ${hfRes.statusText}`);
+        break; // İlk denemede patlamadıysa, sonrakilerde patlarsa eldekilerle yetin
+      }
 
-    // Yıl filtresi uygula
-    if (minYear) {
-      rows = rows.filter(r => r.year >= minYear);
-    }
+      const hfData = await hfRes.json();
+      totalAvailable = hfData.num_rows_total || totalAvailable;
+      
+      let fetchedRows: any[] = hfData.rows?.map((r: any) => r.row) || [];
+      
+      // Yıl filtresi uygula
+      if (minYear) {
+        fetchedRows = fetchedRows.filter(r => r.year >= minYear);
+      }
 
-    // Daire filtresi uygula
-    if (courtFilter) {
-      rows = rows.filter(r =>
-        r.court?.toLowerCase().includes(courtFilter.toLowerCase())
-      );
+      // Daire filtresi uygula
+      if (courtFilter) {
+        fetchedRows = fetchedRows.filter(r =>
+          r.court?.toLowerCase().includes(courtFilter.toLowerCase())
+        );
+      }
+
+      rows = [...rows, ...fetchedRows];
+      currentOffset += 100;
+      attempts++;
+
+      // Eğer yeterince bulduysak döngüden çık
+      if (rows.length >= actualLimit) break;
     }
 
     // İstenen limite sınırla
@@ -124,8 +142,8 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: true,
         imported: 0,
-        message: 'Belirtilen filtrelere uygun karar bulunamadı. offset veya minYear değerini değiştirmeyi deneyin.',
-        totalAvailable: hfData.num_rows_total
+        message: `Taranan 1000 kayıtta (Offset ${offset}-${currentOffset}) filtrelerinize uygun (Örn: Min ${minYear} yılı) karar bulunamadı. Lütfen offset'i daha da büyütün (örn: 50000) veya filtreleri gevşetin.`,
+        totalAvailable: totalAvailable
       });
     }
 

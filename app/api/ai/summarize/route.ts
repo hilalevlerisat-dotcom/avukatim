@@ -110,9 +110,9 @@ Sistemde GEMINI_API_KEY bulunmadığı için bu metin simüle edilmiştir. Bu be
     
     const newDescription = (cleanDescription ? cleanDescription + '\n\n---\n\n' : '') + "🤖 **AI DOSYA ANALİZİ**\n\n" + summaryText;
 
-    const { error: updateError } = await supabase
-      .from('documents')
-      .update({ description: newDescription } as any)
+    const { error: updateError } = await (supabase
+      .from('documents') as any)
+      .update({ description: newDescription })
       .eq('id', documentId);
 
     if (updateError) {

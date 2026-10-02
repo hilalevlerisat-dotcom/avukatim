@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 import { GoogleGenAI } from '@google/genai';
 export async function POST(req: Request) {
   try {
@@ -9,9 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!; // Normally service role for API
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = await createClient();
 
     // 1. Belge kaydını getir
     const { data: doc, error: docError } = await supabase

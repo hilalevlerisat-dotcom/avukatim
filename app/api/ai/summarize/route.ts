@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { GoogleGenAI } from '@google/genai';
 export async function POST(req: Request) {
-  // @ts-ignore
-  const pdfParse = require('pdf-parse');
   try {
     const { documentId } = await req.json();
 
@@ -26,7 +24,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    if (doc.file_type !== 'pdf') {
+    const isPdf = doc.file_type === 'pdf' || (doc.file_name && doc.file_name.toLowerCase().endsWith('.pdf'));
+    if (!isPdf) {
       return NextResponse.json({ error: 'Şu anlık sadece PDF dosyaları özetlenebilir.' }, { status: 400 });
     }
 
@@ -41,15 +40,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Dosya indirilemedi' }, { status: 500 });
     }
 
-    // 3. PDF'ten metni çıkar
+    // 3. Dosyayı Base64'e çevir (Gemini native PDF desteği için)
     const arrayBuffer = await fileData.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const pdfData = await pdfParse(buffer);
-    const extractedText = pdfData.text;
-
-    if (!extractedText || extractedText.trim().length === 0) {
-      return NextResponse.json({ error: 'PDF içerisinden metin çıkarılamadı (Taranmış veya şifreli olabilir).' }, { status: 400 });
-    }
+    const base64Data = buffer.toString('base64');
 
     let summaryText = '';
 
@@ -59,7 +53,7 @@ export async function POST(req: Request) {
       const ai = new GoogleGenAI({ apiKey: geminiKey });
       
       const prompt = `
-Sen kıdemli bir hukuk bürosu asistanısın. Görevin, sana metni verilen hukuki dosyayı (dilekçe, karar, sözleşme, bilirkişi raporu vb.) analiz etmektir.
+Sen kıdemli bir hukuk bürosu asistanısın. Görevin, ekteki hukuki belgeyi (dilekçe, karar, sözleşme, bilirkişi raporu vb.) analiz etmektir.
 Lütfen aşağıdaki formatta bir çıktı üret (Formatı birebir koru, Markdown kullan):
 
 **YÖNETİCİ ÖZETİ**
@@ -70,16 +64,25 @@ Belgenin temel amacı ve sonucu (Maksimum 3 cümle).
 
 **RİSKLER / DİKKAT EDİLMESİ GEREKENLER**
 - Belgedeki müvekkil aleyhine olabilecek riskli maddeleri veya müvekkil lehine kullanılabilecek argümanları kısa maddeler halinde belirt.
-
-İşte analiz etmen gereken belge metni:
----
-${extractedText.substring(0, 30000)} // LLM context sınırını aşmamak için ilk 30.000 karakter
 `;
 
       try {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: prompt,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    mimeType: 'application/pdf',
+                    data: base64Data
+                  }
+                }
+              ]
+            }
+          ]
         });
         summaryText = response.text || 'Özet oluşturulamadı.';
       } catch (aiError: any) {
@@ -90,7 +93,7 @@ ${extractedText.substring(0, 30000)} // LLM context sınırını aşmamak için 
       // Mock Fallback
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
       summaryText = `**YÖNETİCİ ÖZETİ**
-Sistemde GEMINI_API_KEY bulunmadığı için bu metin simüle edilmiştir. Bu belge, ${doc.file_name} adlı dosyadan başarıyla okunmuş ve ${extractedText.split(' ').length} kelimeden oluştuğu tespit edilmiştir.
+Sistemde GEMINI_API_KEY bulunmadığı için bu metin simüle edilmiştir. Bu belge, ${doc.file_name} adlı dosyadan başarıyla alınmıştır.
 
 **KRONOLOJİ & ÖNEMLİ TARİHLER**
 - **${new Date().toLocaleDateString('tr-TR')}**: Dosya sisteme yüklendi.

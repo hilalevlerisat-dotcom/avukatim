@@ -282,23 +282,15 @@ export default function EmsalSearch() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 mt-4 border-t border-border pt-4">
                 <div className="text-[11px] text-muted-foreground">
-                  💡 <strong>Offset:</strong>
-                  <input
-                    type="number"
-                    min={0}
-                    value={importOffset}
-                    onChange={e => setImportOffset(Number(e.target.value))}
-                    className="inline-block w-20 ml-1.5 rounded-lg border border-border bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
-                  />
-                  <span className="ml-1">(daha fazla karar için değiştir)</span>
+                  💡 Her "Aktar" dediğinizde havuzdan <span className="font-semibold text-indigo-500">rastgele</span> yeni kararlar seçilir, yapay zeka ile özetlenir ve semantik aramaya hazır hale getirilir.
                 </div>
 
                 <button
                   onClick={handleImportFromHuggingFace}
                   disabled={importing}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all"
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-md shadow-indigo-500/20 disabled:opacity-50 transition-all flex-shrink-0"
                 >
                   {importing ? (
                     <><Loader2 className="w-3.5 h-3.5 animate-spin" />Aktarılıyor & Vektörleşiyor...</>

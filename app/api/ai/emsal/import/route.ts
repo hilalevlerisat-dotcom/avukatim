@@ -85,9 +85,15 @@ export async function POST(req: Request) {
     const actualLimit = Math.min(Number(limit), 50);
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    // Maksimum 10 sayfa (1000 kayıt) tarayarak uygun olanları bulmaya çalış
-    let rows: any[] = [];
+    // Eğer offset 0 ise (veya girilmemişse), 9.8 milyonluk veride rastgele bir yerden başla
+    // Böylece kullanıcı her "Aktar" dediğinde farklı kararlar gelir
     let currentOffset = Number(offset);
+    if (currentOffset === 0) {
+      // HF'deki yargıtay tablosu ~9.8M satır. Güvenli bir rastgele başlangıç:
+      currentOffset = Math.floor(Math.random() * 8000000); 
+    }
+    
+    let rows: any[] = [];
     let attempts = 0;
     const maxAttempts = 10;
     let totalAvailable = 0;

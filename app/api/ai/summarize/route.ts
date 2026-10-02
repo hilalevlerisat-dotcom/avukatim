@@ -108,7 +108,7 @@ Sistemde GEMINI_API_KEY bulunmadığı için bu metin simüle edilmiştir. Bu be
     // Önceki AI Özetini temizle
     const cleanDescription = (doc.description || '').split('🤖 **AI DOSYA ANALİZİ**')[0].trim();
     
-    const newDescription = (cleanDescription ? cleanDescription + '\\n\\n---\\n\\n' : '') + "🤖 **AI DOSYA ANALİZİ**\\n\\n" + summaryText;
+    const newDescription = (cleanDescription ? cleanDescription + '\n\n---\n\n' : '') + "🤖 **AI DOSYA ANALİZİ**\n\n" + summaryText;
 
     const { error: updateError } = await supabase
       .from('documents')

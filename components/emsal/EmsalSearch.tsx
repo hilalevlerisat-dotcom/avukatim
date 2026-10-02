@@ -46,10 +46,6 @@ export default function EmsalSearch() {
   // Selected decision for modal view
   const [selectedDecision, setSelectedDecision] = useState<any | null>(null)
 
-  // Seed loading state
-  const [seeding, setSeeding] = useState(false)
-  const [seedMessage, setSeedMessage] = useState<string | null>(null)
-
   const handleSearch = async (searchQuery: string = query) => {
     const q = searchQuery.trim()
     if (!q) return
@@ -89,24 +85,6 @@ export default function EmsalSearch() {
     }
   }
 
-  const handleSeed = async () => {
-    setSeeding(true)
-    setSeedMessage(null)
-    try {
-      const res = await fetch('/api/ai/emsal/seed?force=true', { method: 'POST' })
-      const data = await res.json()
-      if (res.ok) {
-        setSeedMessage('✅ 8 adet doğrulanmış gerçek Yargıtay emsal kararı başarıyla yüklendi!')
-      } else {
-        setSeedMessage('❌ ' + (data.error || 'Yüklenemedi'))
-      }
-    } catch (err: any) {
-      setSeedMessage('❌ Hata: ' + err.message)
-    } finally {
-      setSeeding(false)
-    }
-  }
-
   const handleCopyCitation = (decision: any, index: number) => {
     const citation = `${decision.daire}, E. ${decision.esas_no}, K. ${decision.karar_no}${decision.karar_tarihi ? `, T. ${decision.karar_tarihi}` : ''}`
     navigator.clipboard.writeText(citation)
@@ -137,24 +115,7 @@ export default function EmsalSearch() {
           </div>
           Bu sistem sıradan yapay zekalar gibi karar numarası uydurmaz. Gemini vektör modeliyle sorunuzun hukuki anlamını çözer, Supabase veritabanındaki <strong>doğrulanmış gerçek Yargıtay/Danıştay kararlarını</strong> çeker ve sadece bu kararlara dayanarak hukuki analiz üretir.
         </div>
-        
-        {/* Seed helper button */}
-        <button
-          onClick={handleSeed}
-          disabled={seeding}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/40 bg-background/80 hover:bg-emerald-500/20 text-[11px] font-medium text-emerald-700 dark:text-emerald-300 transition-colors"
-          title="Veritabanına örnek emsal kararları yükler"
-        >
-          {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-          {seeding ? 'Yükleniyor...' : 'Örnek Kararları Yükle'}
-        </button>
       </div>
-
-      {seedMessage && (
-        <div className="p-3 rounded-xl bg-card border border-border text-xs text-foreground">
-          {seedMessage}
-        </div>
-      )}
 
       {/* Search Input Box */}
       <div className="bg-card border border-border/70 rounded-2xl p-5 shadow-sm space-y-4">

@@ -110,7 +110,7 @@ function DocumentRow({
 
       <div className="flex-1 min-w-0">
         <button
-          onClick={() => previewable && onPreview(doc)}
+          onClick={() => previewable && onPreview({ ...doc, storage_path: computedStoragePath })}
           className={cn(
             'text-sm font-medium text-left truncate block w-full',
             previewable

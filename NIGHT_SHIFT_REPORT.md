@@ -35,5 +35,11 @@ Kapsamlı bir "Gece Vardiyası" operasyonu gerçekleştirildi. Mobil uyumluluk, 
 - **İade Alınabilir Avans Uyarısı:** MasrafX araştırmasından elde edilen vizyonla, `dosyalar/[id]/page.tsx` ekranına akıllı bir uyarı eklendi. Dosya statüsü "Kapalı (closed)" olan dosyalarda, sistem avukata otomatik olarak "İade Alınabilir Gider Avansı Kontrolü" uyarısı gösteriyor. Bu sayede atıl durumdaki paraların tahsil edilmesi hızlanıyor.
 - **Tip Güvenliği (TypeScript):** Takvim ve Finans istemcilerindeki Typescript derleme (build) sorunları çözüldü (`npx tsc --noEmit` hatasız hale getirildi).
 
+### 6. AI Destekli Dosya Özetleme (Geliştirme Yol Haritası 1. Adım)
+- **API ve Altyapı:** Sisteme `@google/genai` ve `pdf-parse` paketleri dahil edilerek `app/api/ai/summarize/route.ts` API uç noktası oluşturuldu. Bu endpoint, Supabase'den belgeyi indirip PDF metnini çıkararak LLM modeline gönderir.
+- **Kullanıcı Arayüzü (UI):** Dosyalar detay sayfasındaki belge listesine (`DocumentList.tsx`) her PDF dosyası için "Yapay Zeka ile Özet Çıkar" (✨) butonu eklendi.
+- **AI Modal Gösterimi:** `DocumentPreviewModal.tsx` güncellenerek, eğer bir belgeye ait yapay zeka özeti bulunuyorsa, önizleme ekranının sağ tarafında özel bir kenar çubuğunda (sidebar) bu analizin gösterilmesi sağlandı.
+- **Mock (Simülasyon) Modu:** Eğer sisteminizde henüz `GEMINI_API_KEY` `.env.local` dosyasına tanımlanmadıysa, buton yine de çalışacak ve "Yapay zeka demo simülasyonu" üreterek sistemin sorunsuz çalıştığını gösterecektir. 
+
 ---
-**Sonuç:** Gece vardiyasında sistemin UI/UX hataları giderildi, dosya yükleme süreçleri güçlendirildi, Supabase geçişi tamamlandı ve UYAP Excel içeri aktarma gibi devrimsel bir otomasyon sisteme başarıyla entegre edildi. Projenin bir yedeği güvende, güncel kodlar ise hatasız (build-passing) durumdadır.
+**Sonuç:** Gece vardiyasında sistemin UI/UX hataları giderildi, dosya yükleme süreçleri güçlendirildi, Supabase geçişi tamamlandı ve UYAP Excel içeri aktarma gibi devrimsel bir otomasyon sisteme başarıyla entegre edildi. Ayrıca, Geliştirme Yol Haritasının ilk adımı olan "AI Destekli Dosya Özetleme" modülü kodlanıp yayına hazır hale getirildi. Projenin bir yedeği güvende, güncel kodlar ise hatasız (build-passing) durumdadır.

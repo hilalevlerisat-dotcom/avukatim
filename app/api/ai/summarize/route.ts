@@ -1,0 +1,124 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { GoogleGenAI } from '@google/genai';
+export async function POST(req: Request) {
+  // @ts-ignore
+  const pdfParse = require('pdf-parse');
+  try {
+    const { documentId } = await req.json();
+
+    if (!documentId) {
+      return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!; // Normally service role for API
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 1. Belge kaydını getir
+    const { data: doc, error: docError } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
+
+    if (docError || !doc) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+    }
+
+    if (doc.file_type !== 'pdf') {
+      return NextResponse.json({ error: 'Şu anlık sadece PDF dosyaları özetlenebilir.' }, { status: 400 });
+    }
+
+    // 2. Belgeyi Supabase Storage'dan indir
+    const { data: fileData, error: downloadError } = await supabase
+      .storage
+      .from('documents')
+      .download(doc.storage_path);
+
+    if (downloadError || !fileData) {
+      return NextResponse.json({ error: 'Dosya indirilemedi' }, { status: 500 });
+    }
+
+    // 3. PDF'ten metni çıkar
+    const arrayBuffer = await fileData.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const pdfData = await pdfParse(buffer);
+    const extractedText = pdfData.text;
+
+    if (!extractedText || extractedText.trim().length === 0) {
+      return NextResponse.json({ error: 'PDF içerisinden metin çıkarılamadı (Taranmış veya şifreli olabilir).' }, { status: 400 });
+    }
+
+    let summaryText = '';
+
+    // 4. Gemini API ile özetle (Eğer API Key yoksa Mock döner)
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey) {
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
+      
+      const prompt = `
+Sen kıdemli bir hukuk bürosu asistanısın. Görevin, sana metni verilen hukuki dosyayı (dilekçe, karar, sözleşme, bilirkişi raporu vb.) analiz etmektir.
+Lütfen aşağıdaki formatta bir çıktı üret (Formatı birebir koru, Markdown kullan):
+
+**YÖNETİCİ ÖZETİ**
+Belgenin temel amacı ve sonucu (Maksimum 3 cümle).
+
+**KRONOLOJİ & ÖNEMLİ TARİHLER**
+- Belgede geçen tarihleri sırasına göre madde madde listele.
+
+**RİSKLER / DİKKAT EDİLMESİ GEREKENLER**
+- Belgedeki müvekkil aleyhine olabilecek riskli maddeleri veya müvekkil lehine kullanılabilecek argümanları kısa maddeler halinde belirt.
+
+İşte analiz etmen gereken belge metni:
+---
+${extractedText.substring(0, 30000)} // LLM context sınırını aşmamak için ilk 30.000 karakter
+`;
+
+      try {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: prompt,
+        });
+        summaryText = response.text || 'Özet oluşturulamadı.';
+      } catch (aiError: any) {
+        console.error('Gemini API Error:', aiError);
+        return NextResponse.json({ error: 'Yapay Zeka API hatası: ' + aiError.message }, { status: 500 });
+      }
+    } else {
+      // Mock Fallback
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
+      summaryText = `**YÖNETİCİ ÖZETİ**
+Sistemde GEMINI_API_KEY bulunmadığı için bu metin simüle edilmiştir. Bu belge, ${doc.file_name} adlı dosyadan başarıyla okunmuş ve ${extractedText.split(' ').length} kelimeden oluştuğu tespit edilmiştir.
+
+**KRONOLOJİ & ÖNEMLİ TARİHLER**
+- **${new Date().toLocaleDateString('tr-TR')}**: Dosya sisteme yüklendi.
+- **Geçmiş Tarih**: Belge içerisinde geçen spesifik olay tarihleri burada listelenir.
+
+**RİSKLER / DİKKAT EDİLMESİ GEREKENLER**
+- API anahtarı girildiğinde, metin içindeki riskli maddeler (örn: faiz oranları, süre kısıtlamaları, cezai şartlar) yapay zeka tarafından bu alanda otomatik listelenecektir.
+- *Not: Gerçek yapay zeka entegrasyonu için lütfen .env.local dosyasına GEMINI_API_KEY ekleyin.*`;
+    }
+
+    // 5. Özeti Description alanına ekle (Eğer daha önce özet varsa üstüne yazılır veya altına eklenir)
+    // Önceki AI Özetini temizle
+    const cleanDescription = (doc.description || '').split('🤖 **AI DOSYA ANALİZİ**')[0].trim();
+    
+    const newDescription = (cleanDescription ? cleanDescription + '\\n\\n---\\n\\n' : '') + "🤖 **AI DOSYA ANALİZİ**\\n\\n" + summaryText;
+
+    const { error: updateError } = await supabase
+      .from('documents')
+      .update({ description: newDescription })
+      .eq('id', documentId);
+
+    if (updateError) {
+      return NextResponse.json({ error: 'Özet veritabanına kaydedilemedi.' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, summary: summaryText });
+
+  } catch (error: any) {
+    console.error('Summarize API Error:', error);
+    return NextResponse.json({ error: 'Bilinmeyen bir hata oluştu: ' + error.message }, { status: 500 });
+  }
+}

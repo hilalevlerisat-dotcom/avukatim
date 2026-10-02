@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Download, ExternalLink, X, Loader2,
-  FileText, Image, File, AlertCircle,
+  FileText, Image, File, AlertCircle, Sparkles,
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { getSignedUrl, getDownloadUrl, formatFileSize } from '@/lib/supabase/storage'
 import { getFileExtension, fileTypeColor } from '@/lib/utils/folder-matcher'
 import { formatDate } from '@/lib/constants'
@@ -169,61 +170,76 @@ export default function DocumentPreviewModal({ document: doc, open, onClose }: D
         </div>
 
         {/* İçerik */}
-        <div className="flex-1 overflow-auto p-5 min-h-0">
-          {urlStatus === 'loading' && (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-muted-foreground">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <p className="text-sm">Belge yükleniyor…</p>
-            </div>
-          )}
+        <div className="flex-1 flex overflow-hidden min-h-0">
+          <div className="flex-1 overflow-auto p-5 relative">
+            {urlStatus === 'loading' && (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-sm">Belge yükleniyor…</p>
+              </div>
+            )}
 
-          {urlStatus === 'error' && (
-            <div className="flex flex-col items-center justify-center h-64 gap-3 text-destructive">
-              <AlertCircle className="w-8 h-8" />
-              <p className="text-sm font-medium">Belgeye erişilemiyor.</p>
-              <p className="text-xs text-muted-foreground">Supabase Storage bağlantısını ve RLS politikalarını kontrol edin.</p>
-            </div>
-          )}
+            {urlStatus === 'error' && (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-destructive">
+                <AlertCircle className="w-8 h-8" />
+                <p className="text-sm font-medium">Belgeye erişilemiyor.</p>
+                <p className="text-xs text-muted-foreground">Supabase Storage bağlantısını ve RLS politikalarını kontrol edin.</p>
+              </div>
+            )}
 
-          {urlStatus === 'ready' && signedUrl && (
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-64">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                </div>
-              }
-            >
-              {previewType === 'pdf' && (
-                <PreviewPDF url={signedUrl} filename={doc.file_name} />
-              )}
-              {previewType === 'image' && (
-                <PreviewImage url={signedUrl} filename={doc.file_name} />
-              )}
-              {previewType === 'tiff' && (
-                <PreviewTiff url={signedUrl} filename={doc.file_name} />
-              )}
-              {previewType === 'udf' && (
-                <PreviewUDF url={signedUrl} filename={doc.file_name} />
-              )}
-              {previewType === 'unsupported' && (
-                <div className="flex flex-col items-center justify-center h-64 gap-4 text-muted-foreground">
-                  <File className="w-16 h-16 text-muted-foreground/30" />
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-foreground">Önizleme desteklenmiyor</p>
-                    <p className="text-xs mt-1">
-                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[11px]">
-                        .{getFileExtension(doc.file_name)}
-                      </span>{' '}
-                      dosyaları için önizleme mevcut değil.
-                    </p>
+            {urlStatus === 'ready' && signedUrl && (
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-                    <Download className="w-4 h-4" />
-                    Dosyayı İndir
-                  </Button>
-                </div>
-              )}
-            </Suspense>
+                }
+              >
+                {previewType === 'pdf' && (
+                  <PreviewPDF url={signedUrl} filename={doc.file_name} />
+                )}
+                {previewType === 'image' && (
+                  <PreviewImage url={signedUrl} filename={doc.file_name} />
+                )}
+                {previewType === 'tiff' && (
+                  <PreviewTiff url={signedUrl} filename={doc.file_name} />
+                )}
+                {previewType === 'udf' && (
+                  <PreviewUDF url={signedUrl} filename={doc.file_name} />
+                )}
+                {previewType === 'unsupported' && (
+                  <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+                    <File className="w-16 h-16 text-muted-foreground/30" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground">Önizleme desteklenmiyor</p>
+                      <p className="text-xs mt-1">
+                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-[11px]">
+                          .{getFileExtension(doc.file_name)}
+                        </span>{' '}
+                        dosyaları için önizleme mevcut değil.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+                      <Download className="w-4 h-4" />
+                      Dosyayı İndir
+                    </Button>
+                  </div>
+                )}
+              </Suspense>
+            )}
+          </div>
+          
+          {doc.description && (
+            <div className="w-80 border-l border-border/50 bg-muted/10 overflow-y-auto p-5 hidden md:block">
+              <div className="flex items-center gap-2 mb-4 text-amber-500 font-semibold">
+                <Sparkles className="w-4 h-4" />
+                <h4 className="text-sm">Belge Notları / AI Analizi</h4>
+              </div>
+              <div className="prose prose-sm dark:prose-invert max-w-none text-sm text-muted-foreground whitespace-pre-wrap">
+                {/* Since we have AI Markdown, we'll try to just render it directly or use react-markdown if installed, but for safety we just use white-space-pre-wrap */}
+                {doc.description}
+              </div>
+            </div>
           )}
         </div>
       </DialogContent>

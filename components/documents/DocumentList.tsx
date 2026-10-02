@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileText, Image, File, Trash2, Eye,
-  ExternalLink, Download, Loader2,
+  ExternalLink, Download, Loader2, Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -55,9 +55,34 @@ function DocumentRow({
   doc: Document
   onPreview: (doc: Document) => void
   onDelete: (doc: Document) => void
+  onSummarized?: (docId: string, summary: string) => void
 }) {
   const [downloading, setDownloading] = useState(false)
+  const [summarizing, setSummarizing] = useState(false)
   const previewable = isPreviewable(doc.file_name)
+  const isPdf = getFileExtension(doc.file_name) === 'pdf'
+
+  const handleSummarize = async () => {
+    setSummarizing(true)
+    try {
+      const res = await fetch('/api/ai/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId: doc.id })
+      })
+      const data = await res.json()
+      if (data.error) {
+        alert('Hata: ' + data.error)
+      } else {
+        alert('Özet başarıyla çıkarıldı ve belgenin notlarına eklendi!')
+        onSummarized?.(doc.id, data.summary)
+      }
+    } catch (err: any) {
+      alert('Beklenmeyen bir hata oluştu: ' + err.message)
+    } finally {
+      setSummarizing(false)
+    }
+  }
 
   const handleDownload = async () => {
     setDownloading(true)
@@ -125,6 +150,21 @@ function DocumentRow({
             title="Önizle / Görüntüle"
           >
             <Eye className="w-3.5 h-3.5" />
+          </Button>
+        )}
+        {isPdf && (
+          <Button
+            id={`summarize-${doc.id}`}
+            variant="ghost" size="icon"
+            className="h-7 w-7 text-amber-500 hover:text-amber-600 hover:bg-amber-500/10"
+            onClick={handleSummarize}
+            disabled={summarizing}
+            title="Yapay Zeka ile Özet Çıkar (PDF)"
+          >
+            {summarizing 
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <Sparkles className="w-3.5 h-3.5" />
+            }
           </Button>
         )}
         <Button
@@ -206,6 +246,9 @@ export default function DocumentList({
             doc={doc}
             onPreview={setPreviewDoc}
             onDelete={handleDelete}
+            onSummarized={(id, summary) => {
+              setDocs(prev => prev.map(d => d.id === id ? { ...d, description: (d.description ? d.description.split('🤖 **AI DOSYA ANALİZİ**')[0].trim() + '\\n\\n---\\n\\n' : '') + '🤖 **AI DOSYA ANALİZİ**\\n\\n' + summary } : d))
+            }}
           />
         ))}
       </div>

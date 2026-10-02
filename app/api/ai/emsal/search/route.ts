@@ -93,21 +93,21 @@ GÖREVİN: Kullanıcının sorusunu, YALNIZCA AŞAĞIDA VERİLEN DOĞRULANMIŞ E
           
           prompt = `KULLANICININ HUKUKİ SORUSU:\n"${cleanQuery}"\n\nVERİTABANINDAN GETİRİLEN DOĞRULANMIŞ EMSAL KARARLAR:\n${contextText}`;
         } else {
-          // KARAR BULUNAMADI: GENEL HUKUKİ YORUM MODU (SIFIR HALÜSİNASYON)
-          systemPrompt = `Sen bir Kıdemli Hukuk Müşavirisin. Kullanıcının sorusuna yönelik özel veritabanımızda birebir eşleşen emsal karar bulunamamıştır.
-GÖREVİN: Kullanıcının hukuki sorusunu yürürlükteki kanunlar ve genel hukuki doktrin çerçevesinde yanıtlamaktır.
+          // KARAR BULUNAMADI: GOOGLE ARAMA AJANI (WEB SEARCH AGENT)
+          systemPrompt = `Sen bir Kıdemli Hukuk Müşaviri ve Yargıtay İçtihat Analistisin. 
+Kullanıcının sorusuna yönelik özel veritabanımızda birebir eşleşen emsal karar bulunamadığı için Google Arama aracını (Google Search Tool) kullanarak internetteki GÜNCEL VE GERÇEK Yargıtay / Danıştay / AYM kararlarını araştırmakla görevlisin.
 
 🚨🚨🚨 ÇOK KATI HALÜSİNASYON VE DOĞRULUK KURALLARI 🚨🚨🚨:
-1. ASLA HİÇBİR ŞEKİLDE Yargıtay, Danıştay, AYM kararı, Esas Numarası veya Karar Numarası UYDURMAYACAKSIN.
-2. Sadece genel kanun maddelerine (örn: Türk Borçlar Kanunu Madde X) ve yerleşik hukuki ilkelere dayan.
-3. Çıktının en başına mutlaka şu uyarıyı koy: "> ⚠️ **Sistem Notu:** Veritabanınızda bu konuya birebir uyan doğrulanmış bir içtihat bulunamadığı için bu analiz genel kanun hükümlerine göre yapılmıştır. Lütfen resmi emsal kararlar için kütüphanenizi genişletin."
+1. Google'da derinlemesine arama yap ve bulduğun GERÇEK mahkeme kararlarını (Esas No, Karar No, Mahkeme/Daire ve Tarih) mutlaka belirt.
+2. ASLA kafandan karar numarası uydurma. Sadece arama sonuçlarında gerçekten var olan kararları alıntıla.
+3. Çıktının en başına mutlaka şu uyarıyı koy: "> 🌐 **Web Ajanı Notu:** Veritabanınızda bu konuya birebir uyan içtihat bulunamadığı için, yapay zeka ajanımız internette canlı arama yaparak aşağıdaki güncel kararları sizin için bulmuştur."
 4. Çıktını aşağıdaki Markdown başlıklarıyla yapılandır:
 
-### ⚖️ Genel Hukuki Değerlendirme
-### 📌 İlgili Kanun Hükümleri ve Şartlar
-### 💡 Önerilen Hukuki Aksiyon`;
+### ⚖️ Hukuki Sonuç & İçtihat Özeti
+### 📌 Uygulanacak Şartlar ve İspat Kuralları
+### 📑 İnternetten Bulunan Emsal Kararlar`;
 
-          prompt = `KULLANICININ HUKUKİ SORUSU:\n"${cleanQuery}"`;
+          prompt = `Lütfen Google Arama aracını kullanarak şu hukuki soru için güncel Yargıtay/Danıştay kararlarını araştır ve hukuki bir değerlendirme sun:\n"${cleanQuery}"`;
         }
 
         const modelsToTry = [
@@ -121,6 +121,15 @@ GÖREVİN: Kullanıcının hukuki sorusunu yürürlükteki kanunlar ve genel huk
         let genResponse = null;
         for (const model of modelsToTry) {
           try {
+            const reqConfig: any = {
+              temperature: matchedDecisions.length > 0 ? 0.1 : 0.4
+            };
+            
+            // Eğer veritabanında karar yoksa web araması (Google Search Grounding) yapmasına izin ver
+            if (matchedDecisions.length === 0) {
+              reqConfig.tools = [{ googleSearch: {} }];
+            }
+
             genResponse = await ai.models.generateContent({
               model,
               contents: [
@@ -129,9 +138,7 @@ GÖREVİN: Kullanıcının hukuki sorusunu yürürlükteki kanunlar ve genel huk
                   parts: [{ text: `${systemPrompt}\n\n${prompt}` }]
                 }
               ],
-              config: {
-                temperature: matchedDecisions.length > 0 ? 0.1 : 0.4 // RAG için 0.1, Genel yorum için 0.4
-              }
+              config: reqConfig
             });
             break;
           } catch (modelErr) {

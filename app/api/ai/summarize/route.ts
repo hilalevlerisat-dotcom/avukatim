@@ -66,29 +66,49 @@ Belgenin temel amacı ve sonucu (Maksimum 3 cümle).
 - Belgedeki müvekkil aleyhine olabilecek riskli maddeleri veya müvekkil lehine kullanılabilecek argümanları kısa maddeler halinde belirt.
 `;
 
-      try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-3.8-flash',
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    mimeType: 'application/pdf',
-                    data: base64Data
+      const modelsToTry = [
+        'gemini-3.8-flash',
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash',
+        'gemini-flash-latest'
+      ];
+      
+      let response = null;
+      let lastError = null;
+
+      for (const modelName of modelsToTry) {
+        try {
+          response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  {
+                    inlineData: {
+                      mimeType: 'application/pdf',
+                      data: base64Data
+                    }
                   }
-                }
-              ]
-            }
-          ]
-        });
-        summaryText = response.text || 'Özet oluşturulamadı.';
-      } catch (aiError: any) {
-        console.error('Gemini API Error:', aiError);
-        return NextResponse.json({ error: 'Yapay Zeka API hatası: ' + aiError.message }, { status: 500 });
+                ]
+              }
+            ]
+          });
+          break; // Müsait modeli buldu ve başarıyla yanıt aldı, döngüden çık!
+        } catch (err: any) {
+          console.warn(`Model ${modelName} başarısız oldu, bir sonrakine geçiliyor. Hata:`, err.message);
+          lastError = err;
+        }
       }
+
+      if (!response) {
+        console.error('Tüm alternatif modeller başarısız oldu. Son hata:', lastError);
+        return NextResponse.json({ error: 'Sistemdeki tüm Yapay Zeka modelleri şu an aşırı yoğun. Lütfen 1-2 dakika bekleyip tekrar deneyin. (Son Hata: ' + lastError?.message + ')' }, { status: 503 });
+      }
+
+      summaryText = response.text || 'Özet oluşturulamadı.';
     } else {
       // Mock Fallback
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay

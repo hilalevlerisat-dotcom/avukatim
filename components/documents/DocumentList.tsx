@@ -61,6 +61,7 @@ function DocumentRow({
   const [summarizing, setSummarizing] = useState(false)
   const previewable = isPreviewable(doc.file_name)
   const isPdf = getFileExtension(doc.file_name) === 'pdf'
+  const computedStoragePath = doc.storage_path || (doc.case_id ? `${doc.user_id}/cases/${doc.case_id}/${doc.file_name}` : (doc.client_id ? `${doc.user_id}/clients/${doc.client_id}/${doc.file_name}` : `${doc.user_id}/general/${doc.file_name}`))
 
   const handleSummarize = async () => {
     setSummarizing(true)
@@ -86,7 +87,7 @@ function DocumentRow({
 
   const handleDownload = async () => {
     setDownloading(true)
-    const url = await getDownloadUrl(doc.storage_path)
+    const url = await getDownloadUrl(computedStoragePath)
     if (url) {
       const a = document.createElement('a')
       a.href = url
@@ -146,7 +147,7 @@ function DocumentRow({
             id={`preview-${doc.id}`}
             variant="ghost" size="icon"
             className="h-7 w-7 text-primary hover:text-primary hover:bg-primary/10"
-            onClick={() => onPreview(doc)}
+            onClick={() => onPreview({ ...doc, storage_path: computedStoragePath })}
             title="Önizle / Görüntüle"
           >
             <Eye className="w-3.5 h-3.5" />
@@ -220,8 +221,8 @@ export default function DocumentList({
   const handleDelete = async (doc: Document) => {
     if (!confirm(`"${doc.file_name}" dosyasını silmek istediğinize emin misiniz?`)) return
     setDeletingId(doc.id)
-
-    await deleteFile(doc.storage_path)
+    const sp = doc.storage_path || (doc.case_id ? `${doc.user_id}/cases/${doc.case_id}/${doc.file_name}` : (doc.client_id ? `${doc.user_id}/clients/${doc.client_id}/${doc.file_name}` : `${doc.user_id}/general/${doc.file_name}`));
+    await deleteFile(sp)
     setDocs(prev => prev.filter(d => d.id !== doc.id))
     onDeleteDocument?.(doc.id)
     setDeletingId(null)

@@ -31,10 +31,11 @@ export async function POST(req: Request) {
     }
 
     // 2. Belgeyi Supabase Storage'dan indir
+    const computedStoragePath = doc.storage_path || (doc.case_id ? `${doc.user_id}/cases/${doc.case_id}/${doc.file_name}` : (doc.client_id ? `${doc.user_id}/clients/${doc.client_id}/${doc.file_name}` : `${doc.user_id}/general/${doc.file_name}`))
     const { data: fileData, error: downloadError } = await supabase
       .storage
       .from('documents')
-      .download(doc.storage_path);
+      .download(computedStoragePath);
 
     if (downloadError || !fileData) {
       return NextResponse.json({ error: 'Dosya indirilemedi' }, { status: 500 });

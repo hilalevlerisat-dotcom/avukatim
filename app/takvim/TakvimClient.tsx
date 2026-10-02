@@ -136,18 +136,18 @@ export default function TakvimClient() {
     ])
 
     if (financesRes.data && clientsRes.data && casesRes.data) {
-      const enrichedFinances = financesRes.data.map(f => ({
+      const enrichedFinances = financesRes.data.map((f: any) => ({
         ...f,
-        client_name: clientsRes.data.find(c => c.id === f.client_id)?.full_name || 'Bilinmiyor',
-        case_title: casesRes.data.find(c => c.id === f.case_id)?.title || null
+        client_name: clientsRes.data.find((c: any) => c.id === f.client_id)?.full_name || 'Bilinmiyor',
+        case_title: casesRes.data.find((c: any) => c.id === f.case_id)?.title || null
       }))
       setCollections(getAllCollectionSchedules(enrichedFinances as any))
     }
 
     if (hearingsRes.data && clientsRes.data && casesRes.data) {
-      const enrichedHearings = hearingsRes.data.map(h => {
-        const cas = casesRes.data.find(c => c.id === h.case_id)
-        const client = clientsRes.data.find(c => c.id === cas?.client_id)
+      const enrichedHearings = hearingsRes.data.map((h: any) => {
+        const cas = casesRes.data.find((c: any) => c.id === h.case_id)
+        const client = clientsRes.data.find((c: any) => c.id === cas?.client_id)
         return {
           ...h,
           case_title: cas?.title || 'Genel',
@@ -158,9 +158,9 @@ export default function TakvimClient() {
     }
 
     if (deadlinesRes.data && clientsRes.data && casesRes.data) {
-      const enrichedDeadlines = deadlinesRes.data.map(d => {
-        const cas = casesRes.data.find(c => c.id === d.case_id)
-        const client = clientsRes.data.find(c => c.id === cas?.client_id)
+      const enrichedDeadlines = deadlinesRes.data.map((d: any) => {
+        const cas = casesRes.data.find((c: any) => c.id === d.case_id)
+        const client = clientsRes.data.find((c: any) => c.id === cas?.client_id)
         return {
           ...d,
           case_title: cas?.title || 'Genel',

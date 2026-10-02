@@ -12,15 +12,17 @@ export async function POST(req: Request) {
     const supabase = await createClient();
 
     // 1. Belge kaydını getir
-    const { data: doc, error: docError } = await supabase
+    const { data: rawDoc, error: docError } = await supabase
       .from('documents')
       .select('*')
       .eq('id', documentId)
       .single();
 
-    if (docError || !doc) {
+    if (docError || !rawDoc) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
+
+    const doc = rawDoc as any;
 
     const isPdf = doc.file_type === 'pdf' || (doc.file_name && doc.file_name.toLowerCase().endsWith('.pdf'));
     if (!isPdf) {
@@ -110,7 +112,7 @@ Sistemde GEMINI_API_KEY bulunmadığı için bu metin simüle edilmiştir. Bu be
 
     const { error: updateError } = await supabase
       .from('documents')
-      .update({ description: newDescription })
+      .update({ description: newDescription } as any)
       .eq('id', documentId);
 
     if (updateError) {

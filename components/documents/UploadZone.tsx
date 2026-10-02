@@ -360,6 +360,7 @@ export default function UploadZone({
           case_id: caseId,
           file_name: item.file.name,
           storage_path: result.path,
+          file_path: result.path,
           file_type: mimeToFileType(item.file.type, item.file.name),
           mime_type: item.file.type || null,
           file_size: item.file.size,

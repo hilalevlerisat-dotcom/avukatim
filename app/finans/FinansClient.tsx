@@ -45,10 +45,10 @@ export default function FinansClient() {
     if (casesRes.data) setCases(casesRes.data)
     
     if (financesRes.data && clientsRes.data && casesRes.data) {
-      const enrichedRecords = financesRes.data.map(f => ({
+      const enrichedRecords = financesRes.data.map((f: any) => ({
         ...f,
-        client_name: clientsRes.data.find(c => c.id === f.client_id)?.full_name || 'Bilinmiyor',
-        case_title: casesRes.data.find(c => c.id === f.case_id)?.title || null
+        client_name: clientsRes.data.find((c: any) => c.id === f.client_id)?.full_name || 'Bilinmiyor',
+        case_title: casesRes.data.find((c: any) => c.id === f.case_id)?.title || null
       }))
       setRecords(enrichedRecords as any)
     } else if (financesRes.data) {

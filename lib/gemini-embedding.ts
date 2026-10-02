@@ -21,7 +21,7 @@ export async function generateEmbedding(text: string): Promise<number[] | null> 
       contents: cleanText,
     });
 
-    const values = response.embedding?.values || response.embeddings?.[0]?.values;
+    const values = response.embeddings?.[0]?.values;
     if (values && Array.isArray(values) && values.length === 768) {
       return values;
     }

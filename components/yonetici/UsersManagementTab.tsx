@@ -115,6 +115,7 @@ export default function UsersManagementTab() {
     hatirlaticilar: 'Hatırlatıcılar',
     hesaplamalar: 'Hesaplamalar',
     yonetici: 'Yönetici Ekranı',
+    'emsal-kararlar': 'Emsal Kararlar',
   }
 
   return (

@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Check,
   Sparkles,
+  Scale,
 } from 'lucide-react'
 import {
   SystemUser,
@@ -53,6 +54,7 @@ const PANEL_ICONS: Record<PanelPermission, React.ComponentType<{ className?: str
   hatirlaticilar: Bell,
   hesaplamalar: Calculator,
   yonetici: ShieldCheck,
+  'emsal-kararlar': Scale,
 }
 
 export default function UserEditDialog({

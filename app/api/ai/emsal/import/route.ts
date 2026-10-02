@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     hfUrl.searchParams.set('config', config);
     hfUrl.searchParams.set('split', 'train');
     hfUrl.searchParams.set('offset', String(offset));
-    hfUrl.searchParams.set('length', String(Math.min(actualLimit * 5, 200))); // Daha fazla çek, filtreleyeceğiz
+    hfUrl.searchParams.set('length', String(Math.min(actualLimit * 5, 100))); // Daha fazla çek, filtreleyeceğiz (Max 100)
 
     const hfRes = await fetch(hfUrl.toString(), {
       headers: { 'Accept': 'application/json' },

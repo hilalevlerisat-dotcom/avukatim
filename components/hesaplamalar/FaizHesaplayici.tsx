@@ -170,9 +170,9 @@ export default function FaizHesaplayici() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Açıklama */}
-      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 flex gap-3">
-        <Info className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
-        <p className="text-sm text-emerald-300/90">
+      <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-4 flex gap-3">
+        <Info className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-emerald-800 dark:text-emerald-300/90">
           TCMB faiz oranları değiştikçe sistem otomatik olarak farklı dönemlere uygun oranları uygular
           (değişken oranlı hesaplama). Basit faiz yöntemi kullanılır (Anapara × Oran × Gün / 365).
         </p>
@@ -195,8 +195,8 @@ export default function FaizHesaplayici() {
                 onClick={() => { setFaizTuru(ft.id); setSonuc(null) }}
                 className={`text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200 ${
                   faizTuru === ft.id
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                    : 'bg-background border-border text-muted-foreground hover:border-emerald-500/30 hover:text-foreground'
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-700 dark:text-emerald-300'
+                    : 'bg-background border-border text-foreground hover:border-emerald-500/30'
                 }`}
               >
                 <p className="font-medium">{ft.label}</p>

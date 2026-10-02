@@ -230,9 +230,9 @@ export default function SureHesaplayici() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Açıklama Kartı */}
-      <div className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4 flex gap-3">
-        <Info className="w-4 h-4 text-violet-400 mt-0.5 flex-shrink-0" />
-        <p className="text-sm text-violet-300/90">
+      <div className="bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 rounded-2xl p-4 flex gap-3">
+        <Info className="w-4 h-4 text-violet-600 dark:text-violet-400 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-violet-800 dark:text-violet-300/90">
           Tebliğ tarihini ve yasal işlem türünü seçin. Sistem; HMK, CMK ve İYUK hükümlerine göre hafta sonlarını,
           resmi tatilleri ve <strong>adli tatili (20 Temmuz – 31 Ağustos)</strong> otomatik olarak hesaba katar.
         </p>
@@ -302,10 +302,10 @@ export default function SureHesaplayici() {
         )}
 
         {/* Seçili işlem hakkında bilgi */}
-        <div className="bg-muted/30 rounded-xl p-3 text-xs text-muted-foreground">
+        <div className="bg-muted/50 border border-border/50 rounded-xl p-3 text-xs text-foreground/70">
           <span className="font-medium text-foreground">{seciliSureTipi.kanun}: </span>
           {seciliSureTipi.aciklama}
-          <span className="ml-2 text-violet-400">
+          <span className="ml-2 text-violet-600 dark:text-violet-400">
             ({seciliSureTipi.haftasonuSayilir ? 'Takvim günü' : 'İş günü'} ·
             {seciliSureTipi.adliTatilDurur ? ' Adli tatilde durur' : ' Adli tatil geçerli değil'})
           </span>

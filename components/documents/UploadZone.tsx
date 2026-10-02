@@ -358,14 +358,15 @@ export default function UploadZone({
           client_id: clientId === 'genel' ? null : clientId,
           case_id: caseId,
           file_name: item.file.name,
+          storage_path: result.path,
+          file_type: mimeToFileType(item.file.type, item.file.name),
           mime_type: item.file.type || null,
           file_size: item.file.size,
           description: null,
+          folder_name: matchState?.folderName ?? null,
           uploaded_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          // Bypassing TS errors for missing columns by casting to any
-          storage_path: result.path,
-        } as any
+        }
         saveDocumentToStore(docToSave)
       }
 

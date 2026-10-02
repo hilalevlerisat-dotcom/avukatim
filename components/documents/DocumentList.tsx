@@ -51,6 +51,7 @@ function DocumentRow({
   doc,
   onPreview,
   onDelete,
+  onSummarized,
 }: {
   doc: Document
   onPreview: (doc: Document) => void

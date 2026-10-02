@@ -5,6 +5,7 @@ export type PanelPermission =
   | 'takvim'
   | 'finans'
   | 'hatirlaticilar'
+  | 'hesaplamalar'
   | 'yonetici'
 
 export interface PanelDefinition {
@@ -50,6 +51,12 @@ export const AVAILABLE_PANELS: PanelDefinition[] = [
     label: 'Hatırlatıcılar & Bildirimler',
     description: 'Duruşma ve süre bildirimleri, kişisel notlar',
     route: '/hatirlaticilar',
+  },
+  {
+    id: 'hesaplamalar',
+    label: 'Hesaplamalar & Araçlar',
+    description: 'Hukuki süre hesaplama, faiz ve tazminat hesaplama araçları',
+    route: '/hesaplamalar',
   },
   {
     id: 'yonetici',

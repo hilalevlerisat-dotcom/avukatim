@@ -113,6 +113,7 @@ export default function UsersManagementTab() {
     takvim: 'Takvim',
     finans: 'Finans',
     hatirlaticilar: 'Hatırlatıcılar',
+    hesaplamalar: 'Hesaplamalar',
     yonetici: 'Yönetici Ekranı',
   }
 

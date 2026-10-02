@@ -26,6 +26,7 @@ import {
   CalendarDays,
   Wallet,
   Bell,
+  Calculator,
   ShieldCheck,
   Check,
   Sparkles,
@@ -50,6 +51,7 @@ const PANEL_ICONS: Record<PanelPermission, React.ComponentType<{ className?: str
   takvim: CalendarDays,
   finans: Wallet,
   hatirlaticilar: Bell,
+  hesaplamalar: Calculator,
   yonetici: ShieldCheck,
 }
 

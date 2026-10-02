@@ -11,6 +11,7 @@ import {
   CalendarDays,
   Wallet,
   Bell,
+  Calculator,
   Menu,
   X,
   ChevronRight,
@@ -34,13 +35,14 @@ interface NavItem {
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard',      href: '/',              icon: LayoutDashboard, label: 'Dashboard',      description: 'Genel bakış' },
-  { id: 'dosyalar',       href: '/dosyalar',     icon: FolderOpen,       label: 'Dosyalar',       description: 'Tüm davalar' },
-  { id: 'muvekkiller',    href: '/muvekkiller',  icon: Users,             label: 'Müvekkiller',    description: 'Müvekkil listesi' },
-  { id: 'takvim',         href: '/takvim',       icon: CalendarDays,      label: 'Takvim',         description: 'Duruşma & süreler' },
-  { id: 'finans',         href: '/finans',       icon: Wallet,            label: 'Finans',         description: 'Vekalet & ödemeler' },
+  { id: 'dashboard',      href: '/',                icon: LayoutDashboard, label: 'Dashboard',       description: 'Genel bakış' },
+  { id: 'dosyalar',       href: '/dosyalar',        icon: FolderOpen,      label: 'Dosyalar',        description: 'Tüm davalar' },
+  { id: 'muvekkiller',   href: '/muvekkiller',     icon: Users,           label: 'Müvekkiller',    description: 'Müvekkil listesi' },
+  { id: 'takvim',        href: '/takvim',          icon: CalendarDays,    label: 'Takvim',          description: 'Duruşma & süreler' },
+  { id: 'finans',        href: '/finans',          icon: Wallet,          label: 'Finans',          description: 'Vekalet & ödemeler' },
   { id: 'hatirlaticilar', href: '/hatirlaticilar', icon: Bell,            label: 'Hatırlatıcılar', description: 'Bildirimler' },
-  { id: 'yonetici',       href: '/yonetici',       icon: ShieldCheck,       label: 'Yönetici Ekranı', description: 'Profil & Yetkiler' },
+  { id: 'hesaplamalar',  href: '/hesaplamalar',    icon: Calculator,      label: 'Hesaplamalar',    description: 'Süre & Faiz hesaplama' },
+  { id: 'yonetici',      href: '/yonetici',        icon: ShieldCheck,     label: 'Yönetici Ekranı', description: 'Profil & Yetkiler' },
 ]
 
 export default function Sidebar() {

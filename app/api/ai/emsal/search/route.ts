@@ -57,28 +57,19 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Eğer hiçbir karar bulunamadıysa (Halüsinasyonu önle: Asla kafadan karar uydurma!)
-    if (matchedDecisions.length === 0) {
-      return NextResponse.json({
-        success: true,
-        query: cleanQuery,
-        matchedCount: 0,
-        decisions: [],
-        analysis: null,
-        message: 'Belirtilen hukuki konuya veya soruya dair veritabanımızda yeterli benzerlikte doğrulanmış emsal karar bulunamadı. Yapay zeka halüsinasyon (sahte karar numarası uydurma) riskini önlemek amacıyla hayali içtihat üretmemiştir.'
-      });
-    }
-
-    // 5. Kararlar bulundu: Gemini ile KATI KORUMALI (Strict Grounding) Hukuki Değerlendirme Üret
     let aiAnalysis = '';
     const geminiKey = process.env.GEMINI_API_KEY;
 
     if (geminiKey) {
       try {
         const ai = new GoogleGenAI({ apiKey: geminiKey });
+        
+        let systemPrompt = '';
+        let prompt = '';
 
-        // Sadece veritabanından gelen gerçek kararların özetlerini context olarak ver
-        const contextText = matchedDecisions.map((d, i) => `
+        if (matchedDecisions.length > 0) {
+          // KARARLAR BULUNDU: KATI RAG MODU
+          const contextText = matchedDecisions.map((d, i) => `
 [KARAR ${i + 1}]
 - Mahkeme / Daire: ${d.daire}
 - Esas No: ${d.esas_no} | Karar No: ${d.karar_no}
@@ -87,27 +78,37 @@ export async function POST(req: Request) {
 - Yasal Gerekçe ve Özet: ${d.ozet}
 `).join('\n---\n');
 
-        const systemPrompt = `
-Sen bir Kıdemli Hukuk Müşaviri ve Yargıtay İçtihat Analistisin.
+          systemPrompt = `Sen bir Kıdemli Hukuk Müşaviri ve Yargıtay İçtihat Analistisin.
 GÖREVİN: Kullanıcının sorusunu, YALNIZCA AŞAĞIDA VERİLEN DOĞRULANMIŞ EMSAL KARARLARI temel alarak hukuki açıdan değerlendirmektir.
 
 🚨🚨🚨 ÇOK KATI HALÜSİNASYON VE DOĞRULUK KURALLARI 🚨🚨🚨:
 1. ASLA aşağıda verilen kararlar haricinde kafandan/eğitim verinden başka bir karar, Esas No, Karar No, Mahkeme veya Daire UYDURMA.
 2. Sunduğun her hukuki kuralı mutlaka ilgili karara atıfta bulunarak parantez içinde belirt (Örnek format: [Yargıtay 9. HD, E. 2021/11245, K. 2022/1534]).
-3. Eğer aşağıdaki kararlar kullanıcının sorusunu yüzde yüz aydınlatmıyorsa açıkça belirt: "Mevcut emsal kararlar uyuşmazlığın şu kısmını kapsamaktadır, ancak ... konusunda doğrudan bir içtihat bulunmamaktadır." de.
+3. Eğer aşağıdaki kararlar kullanıcının sorusunu yüzde yüz aydınlatmıyorsa açıkça belirt.
 4. Çıktını aşağıdaki Markdown başlıklarıyla yapılandır:
 
 ### ⚖️ Hukuki Sonuç & İçtihat Özeti
-(Avukatın sorusunun yerleşik içtihatlara göre net ve doğrudan cevabı)
-
 ### 📌 Uygulanacak Şartlar ve İspat Kuralları
-(Madde madde: ispat yükü kime ait, yazılı delil şartı var mı, hak düşürücü süre veya istisnalar neler)
+### 📑 Dayanılan Doğrulanmış Emsal Kararlar`;
+          
+          prompt = `KULLANICININ HUKUKİ SORUSU:\n"${cleanQuery}"\n\nVERİTABANINDAN GETİRİLEN DOĞRULANMIŞ EMSAL KARARLAR:\n${contextText}`;
+        } else {
+          // KARAR BULUNAMADI: GENEL HUKUKİ YORUM MODU (SIFIR HALÜSİNASYON)
+          systemPrompt = `Sen bir Kıdemli Hukuk Müşavirisin. Kullanıcının sorusuna yönelik özel veritabanımızda birebir eşleşen emsal karar bulunamamıştır.
+GÖREVİN: Kullanıcının hukuki sorusunu yürürlükteki kanunlar ve genel hukuki doktrin çerçevesinde yanıtlamaktır.
 
-### 📑 Dayanılan Doğrulanmış Emsal Kararlar
-(Listelenen kararların bu uyuşmazlığa nasıl uygulandığının kısa özeti)
-`;
+🚨🚨🚨 ÇOK KATI HALÜSİNASYON VE DOĞRULUK KURALLARI 🚨🚨🚨:
+1. ASLA HİÇBİR ŞEKİLDE Yargıtay, Danıştay, AYM kararı, Esas Numarası veya Karar Numarası UYDURMAYACAKSIN.
+2. Sadece genel kanun maddelerine (örn: Türk Borçlar Kanunu Madde X) ve yerleşik hukuki ilkelere dayan.
+3. Çıktının en başına mutlaka şu uyarıyı koy: "> ⚠️ **Sistem Notu:** Veritabanınızda bu konuya birebir uyan doğrulanmış bir içtihat bulunamadığı için bu analiz genel kanun hükümlerine göre yapılmıştır. Lütfen resmi emsal kararlar için kütüphanenizi genişletin."
+4. Çıktını aşağıdaki Markdown başlıklarıyla yapılandır:
 
-        const prompt = `KULLANICININ HUKUKİ SORUSU:\n"${cleanQuery}"\n\nVERİTABANINDAN GETİRİLEN DOĞRULANMIŞ EMSAL KARARLAR:\n${contextText}`;
+### ⚖️ Genel Hukuki Değerlendirme
+### 📌 İlgili Kanun Hükümleri ve Şartlar
+### 💡 Önerilen Hukuki Aksiyon`;
+
+          prompt = `KULLANICININ HUKUKİ SORUSU:\n"${cleanQuery}"`;
+        }
 
         const modelsToTry = [
           'gemini-3.8-flash',
@@ -129,7 +130,7 @@ GÖREVİN: Kullanıcının sorusunu, YALNIZCA AŞAĞIDA VERİLEN DOĞRULANMIŞ E
                 }
               ],
               config: {
-                temperature: 0.1 // Halüsinasyonu sıfırlamak için en düşük yaratıcılık / katı bağlılık
+                temperature: matchedDecisions.length > 0 ? 0.1 : 0.4 // RAG için 0.1, Genel yorum için 0.4
               }
             });
             break;
@@ -148,9 +149,20 @@ GÖREVİN: Kullanıcının sorusunu, YALNIZCA AŞAĞIDA VERİLEN DOĞRULANMIŞ E
 
     // Eğer Gemini yanıtı alınamadıysa veya key yoksa, deterministik güvenli özet üret
     if (!aiAnalysis) {
-      aiAnalysis = `### ⚖️ Hukuki Sonuç & İçtihat Özeti\nVeritabanında sorgunuza karşılık gelen **${matchedDecisions.length} adet doğrulanmış emsal karar** tespit edildi.\n\n` +
-        matchedDecisions.map(d => `- **${d.daire} (${d.esas_no} / ${d.karar_no})**: ${d.ozet}`).join('\n\n') +
-        `\n\n> 🛡️ *Halüsinasyon Koruması: Bu sonuçlar doğrudan veritabanındaki resmi Yargıtay kayıtlarından derlenmiştir.*`;
+      if (matchedDecisions.length > 0) {
+        aiAnalysis = `### ⚖️ Hukuki Sonuç & İçtihat Özeti\nVeritabanında sorgunuza karşılık gelen **${matchedDecisions.length} adet doğrulanmış emsal karar** tespit edildi.\n\n` +
+          matchedDecisions.map(d => `- **${d.daire} (${d.esas_no} / ${d.karar_no})**: ${d.ozet}`).join('\n\n') +
+          `\n\n> 🛡️ *Halüsinasyon Koruması: Bu sonuçlar doğrudan veritabanındaki resmi Yargıtay kayıtlarından derlenmiştir.*`;
+      } else {
+        return NextResponse.json({
+          success: true,
+          query: cleanQuery,
+          matchedCount: 0,
+          decisions: [],
+          analysis: null,
+          message: 'Veritabanında bu konuya uygun emsal karar bulunamadı ve yapay zeka servisine erişilemediği için analiz yapılamadı.'
+        });
+      }
     }
 
     return NextResponse.json({

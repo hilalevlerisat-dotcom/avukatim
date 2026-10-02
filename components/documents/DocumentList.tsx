@@ -62,7 +62,7 @@ function DocumentRow({
   const [summarizing, setSummarizing] = useState(false)
   const previewable = isPreviewable(doc.file_name)
   const isPdf = getFileExtension(doc.file_name) === 'pdf'
-  const computedStoragePath = doc.storage_path || (doc.case_id ? `${doc.user_id}/cases/${doc.case_id}/${doc.file_name}` : (doc.client_id ? `${doc.user_id}/clients/${doc.client_id}/${doc.file_name}` : `${doc.user_id}/general/${doc.file_name}`))
+  const computedStoragePath = doc.file_path || doc.storage_path || (doc.case_id ? `${doc.user_id}/cases/${doc.case_id}/${doc.file_name}` : (doc.client_id ? `${doc.user_id}/clients/${doc.client_id}/${doc.file_name}` : `${doc.user_id}/general/${doc.file_name}`))
 
   const handleSummarize = async () => {
     setSummarizing(true)

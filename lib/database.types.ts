@@ -167,6 +167,7 @@ export interface Database {
           case_id: string | null
           file_name: string
           storage_path: string
+          file_path?: string | null
           file_type: DocumentFileType
           mime_type: string | null
           file_size: number | null

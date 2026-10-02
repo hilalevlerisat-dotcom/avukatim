@@ -328,6 +328,7 @@ export default function UploadZone({
               client_id: clientId === 'genel' ? null : clientId,
               case_id: caseId,
               file_name: item.file.name,
+              file_path: result.path,
               mime_type: item.file.type || null,
               file_size: item.file.size,
             } as any)

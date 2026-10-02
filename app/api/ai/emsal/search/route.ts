@@ -111,11 +111,10 @@ Kullanıcının sorusuna yönelik özel veritabanımızda birebir eşleşen emsa
         }
 
         const modelsToTry = [
-          'gemini-3.8-flash',
-          'gemini-3.7-flash',
-          'gemini-3.6-flash',
-          'gemini-3.5-flash',
-          'gemini-flash-latest'
+          'gemini-2.0-flash',
+          'gemini-2.0-flash-lite-preview-02-05',
+          'gemini-1.5-pro',
+          'gemini-1.5-flash',
         ];
 
         let genResponse = null;
@@ -167,7 +166,7 @@ Kullanıcının sorusuna yönelik özel veritabanımızda birebir eşleşen emsa
           matchedCount: 0,
           decisions: [],
           analysis: null,
-          message: 'Veritabanında bu konuya uygun emsal karar bulunamadı ve yapay zeka servisine erişilemediği için analiz yapılamadı.'
+          message: 'Canlı web taraması sırasında yapay zeka servisine erişilemedi veya sorgunuza uygun yeterli içtihat tespit edilemedi.'
         });
       }
     }

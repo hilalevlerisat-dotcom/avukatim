@@ -241,7 +241,7 @@ export default function EmsalSearch() {
             </div>
             <p className="leading-relaxed">{error}</p>
             <div className="pt-2 text-[11px] text-amber-700 dark:text-amber-400">
-              💡 <strong>İpucu:</strong> Kendi "Emsal Karar Kütüphanesi" panelinizden kararlar ekleyebilir veya Benzerlik Eşiği çubuğunu biraz düşürebilirsiniz.
+              💡 <strong>İpucu:</strong> Arama terimlerinizi basitleştirmeyi veya Benzerlik Eşiği çubuğunu biraz düşürmeyi deneyebilirsiniz. Hukuki konuyu daha genel kavramlarla aratmak yapay zeka web ajanının sonuç bulmasını kolaylaştıracaktır.
             </div>
           </div>
         </div>

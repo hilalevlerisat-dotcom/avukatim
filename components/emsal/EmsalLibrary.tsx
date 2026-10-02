@@ -28,7 +28,6 @@ export default function EmsalLibrary({ onOpenAddModal }: EmsalLibraryProps) {
   const [selectedDecision, setSelectedDecision] = useState<any | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [seeding, setSeeding] = useState(false)
 
   const fetchDecisions = async () => {
     setLoading(true)
@@ -74,21 +73,6 @@ export default function EmsalLibrary({ onOpenAddModal }: EmsalLibraryProps) {
       setDeletingId(null)
     }
   }
-
-  const handleSeed = async () => {
-    setSeeding(true)
-    try {
-      const res = await fetch('/api/ai/emsal/seed?force=true', { method: 'POST' })
-      if (res.ok) {
-        await fetchDecisions()
-      }
-    } catch (err) {
-      console.error('Seed hatası:', err)
-    } finally {
-      setSeeding(false)
-    }
-  }
-
   const handleCopyCitation = (decision: any) => {
     const citation = `${decision.daire}, E. ${decision.esas_no}, K. ${decision.karar_no}${decision.karar_tarihi ? `, T. ${decision.karar_tarihi}` : ''}`
     navigator.clipboard.writeText(citation)
@@ -112,17 +96,6 @@ export default function EmsalLibrary({ onOpenAddModal }: EmsalLibraryProps) {
         </form>
 
         <div className="flex items-center gap-2">
-          {decisions.length === 0 && !loading && (
-            <button
-              onClick={handleSeed}
-              disabled={seeding}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-xs font-medium hover:bg-emerald-500/20 transition-colors"
-            >
-              {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
-              {seeding ? 'Yükleniyor...' : 'Örnek Kararları Yükle'}
-            </button>
-          )}
-
           <button
             onClick={onOpenAddModal}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 shadow-sm transition-opacity"
@@ -147,17 +120,9 @@ export default function EmsalLibrary({ onOpenAddModal }: EmsalLibraryProps) {
           <div>
             <h4 className="text-sm font-semibold text-foreground">Henüz Emsal Karar Bulunmuyor</h4>
             <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-              Veritabanınıza tek tıkla doğrulanmış örnek kararları yükleyebilir veya kendi önemli kararlarınızı ekleyebilirsiniz.
+              Veritabanınıza tek tıkla kendi önemli kararlarınızı ekleyebilirsiniz.
             </p>
           </div>
-          <button
-            onClick={handleSeed}
-            disabled={seeding}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
-          >
-            {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-            Örnek Yargıtay Kararlarını Yükle
-          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -74,13 +74,14 @@ export async function uploadFile(
       if (!error && data) {
         onProgress?.(100)
         return { path: data.path, error: null }
+      } else {
+        return { path: storagePath, error: error?.message || 'Bilinmeyen Storage hatası' }
       }
-    } catch (e) {
-      console.warn('Supabase storage upload failed, falling back to local storage', e)
+    } catch (e: any) {
+      console.warn('Supabase storage upload failed', e)
+      return { path: storagePath, error: e.message || 'Storage bağlantı hatası' }
     }
   }
-
-  await new Promise(r => setTimeout(r, 100))
   onProgress?.(100)
   return { path: storagePath, error: null }
 }

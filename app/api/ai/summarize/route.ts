@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     const computedStoragePath = doc.file_path || doc.storage_path || (doc.case_id ? `${doc.user_id}/cases/${doc.case_id}/${doc.file_name}` : (doc.client_id ? `${doc.user_id}/clients/${doc.client_id}/${doc.file_name}` : `${doc.user_id}/general/${doc.file_name}`))
     const { data: fileData, error: downloadError } = await supabase
       .storage
-      .from('documents')
+      .from('avukat-documents')
       .download(computedStoragePath);
 
     if (downloadError || !fileData) {

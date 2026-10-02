@@ -6,6 +6,7 @@ export type PanelPermission =
   | 'finans'
   | 'hatirlaticilar'
   | 'hesaplamalar'
+  | 'emsal-kararlar'
   | 'yonetici'
 
 export interface PanelDefinition {
@@ -57,6 +58,12 @@ export const AVAILABLE_PANELS: PanelDefinition[] = [
     label: 'Hesaplamalar & Araçlar',
     description: 'Hukuki süre hesaplama, faiz ve tazminat hesaplama araçları',
     route: '/hesaplamalar',
+  },
+  {
+    id: 'emsal-kararlar',
+    label: 'Emsal Kararlar (AI RAG)',
+    description: 'Yargıtay ve Danıştay emsal kararlarında semantik arama',
+    route: '/emsal-kararlar',
   },
   {
     id: 'yonetici',

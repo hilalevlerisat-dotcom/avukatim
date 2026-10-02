@@ -12,6 +12,7 @@ import {
   Wallet,
   Bell,
   Calculator,
+  Scale,
   Menu,
   X,
   ChevronRight,
@@ -42,6 +43,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'finans',        href: '/finans',          icon: Wallet,          label: 'Finans',          description: 'Vekalet & ödemeler' },
   { id: 'hatirlaticilar', href: '/hatirlaticilar', icon: Bell,            label: 'Hatırlatıcılar', description: 'Bildirimler' },
   { id: 'hesaplamalar',  href: '/hesaplamalar',    icon: Calculator,      label: 'Hesaplamalar',    description: 'Süre & Faiz hesaplama' },
+  { id: 'emsal-kararlar', href: '/emsal-kararlar', icon: Scale,           label: 'Emsal Kararlar',  description: 'AI ile içtihat arama', badge: 'AI' },
   { id: 'yonetici',      href: '/yonetici',        icon: ShieldCheck,     label: 'Yönetici Ekranı', description: 'Profil & Yetkiler' },
 ]
 

@@ -172,6 +172,51 @@ app.get('/api/sync-clients', (req, res) => {
 
 app.get('/health', (req, res) => res.json({ status: 'ok', baseDir: BASE_DIR }));
 
+app.get('/api/extract', async (req, res) => {
+  try {
+    const relativePath = req.query.path;
+    if (!relativePath) {
+      return res.status(400).json({ error: 'Dosya yolu belirtilmedi.' });
+    }
+
+    const targetPath = getSecurePath(relativePath);
+
+    if (!fs.existsSync(targetPath)) {
+      return res.status(404).json({ error: 'Dosya bulunamadı.' });
+    }
+
+    const ext = path.extname(targetPath).toLowerCase();
+    let text = '';
+
+    if (ext === '.udf') {
+      const AdmZip = require('adm-zip');
+      const zip = new AdmZip(targetPath);
+      const zipEntries = zip.getEntries();
+      const contentEntry = zipEntries.find(e => e.entryName === 'content.xml');
+      
+      if (contentEntry) {
+        const xmlContent = zip.readAsText(contentEntry);
+        // Clean XML tags to get raw text
+        text = xmlContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      } else {
+        throw new Error('UDF formatı geçerli değil.');
+      }
+    } else if (ext === '.pdf') {
+      const pdfParse = require('pdf-parse');
+      const dataBuffer = fs.readFileSync(targetPath);
+      const data = await pdfParse(dataBuffer);
+      text = data.text;
+    } else {
+      return res.status(400).json({ error: 'Sadece UDF ve PDF dosyaları analiz edilebilir.' });
+    }
+
+    res.json({ success: true, text });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Yerel Dosya Sunucusu çalışıyor: http://localhost:${PORT}`);
   console.log(`📁 Bağlı Klasör: ${BASE_DIR}`);

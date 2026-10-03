@@ -43,6 +43,7 @@ import SetRetainerDialog from '@/components/forms/SetRetainerDialog'
 import EditFinanceDialog from '@/components/forms/EditFinanceDialog'
 import NewFinanceDialog from '@/components/forms/NewFinanceDialog'
 import NewCaseDialog from '@/components/forms/NewCaseDialog'
+import LocalFileBrowser from '@/components/ui/LocalFileBrowser'
 
 interface MuvekkilDetayClientProps {
   id: string
@@ -295,6 +296,9 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
           <TabsTrigger value="finance" className="text-xs">
             Finans Kayıtları ({finances.length})
           </TabsTrigger>
+          <TabsTrigger value="local-folder" className="text-xs">
+            Klasör (Yerel)
+          </TabsTrigger>
         </TabsList>
 
         {/* Cases Content */}
@@ -411,7 +415,21 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
                 </div>
               ))}
             </div>
-          )}
+        </TabsContent>
+
+        {/* Local Folder Content */}
+        <TabsContent value="local-folder" className="mt-4">
+          <div className="bg-card rounded-2xl p-4 border border-border/50">
+            <LocalFileBrowser initialPath={
+              client.notes?.includes('Av. Süleyman KAYA') 
+                ? `Av. Süleyman KAYA/${client.full_name}`
+                : client.notes?.includes('Hukuk Dosyası')
+                  ? `Hukuk/${client.full_name}`
+                  : client.notes?.includes('Ceza Dosyası')
+                    ? `Ceza/${client.full_name}`
+                    : '' // fallback if no notes matched
+            } />
+          </div>
         </TabsContent>
       </Tabs>
 

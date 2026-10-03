@@ -1,13 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Folder, FileText, Download, ArrowLeft, Server, HardDrive, RefreshCcw } from 'lucide-react'
+import { Folder, FileText, Download, ArrowLeft, RefreshCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const LOCAL_SERVER_URL = 'http://localhost:4000'
 
-export default function YerelArsivPage() {
-  const [currentPath, setCurrentPath] = useState('')
+interface LocalFileBrowserProps {
+  initialPath?: string;
+}
+
+export default function LocalFileBrowser({ initialPath = '' }: LocalFileBrowserProps) {
+  const [currentPath, setCurrentPath] = useState(initialPath)
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -32,15 +36,19 @@ export default function YerelArsivPage() {
   }
 
   useEffect(() => {
-    fetchFiles('')
-  }, [])
+    fetchFiles(initialPath)
+  }, [initialPath])
 
   const handleNavigate = (newPath: string) => {
     fetchFiles(newPath)
   }
 
   const handleBack = () => {
+    // If we are at the initialPath, don't allow going back further than initialPath if we want to lock them in?
+    // Actually, allowing full navigation is fine, but if we are at root, disable.
     if (!currentPath) return
+    if (currentPath === initialPath) return // prevent escaping the initial sandbox if needed. Actually let's allow it, but stop at root.
+    
     const parts = currentPath.split(/[\/\\]/).filter(Boolean)
     parts.pop()
     fetchFiles(parts.join('/'))
@@ -59,36 +67,27 @@ export default function YerelArsivPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border/50 pb-5">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20 text-white">
-            <HardDrive className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              Yerel Arşiv (Offline Dosyalar)
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {error ? <span className="text-red-500">{error}</span> : 'Masaüstünüzdeki 36GB dev arşive doğrudan, buluta yüklemeden erişiyorsunuz.'}
-            </p>
+    <div className="space-y-4">
+      {/* Header Controls */}
+      <div className="flex items-center justify-between flex-wrap gap-4 border-b border-border/50 pb-4">
+        <div className="flex items-center gap-3 bg-muted/30 p-2 rounded-xl border border-border/50 flex-1">
+          <Button variant="ghost" size="sm" onClick={handleBack} disabled={!currentPath || loading}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Geri
+          </Button>
+          <div className="text-sm font-medium text-foreground opacity-80 font-mono bg-background px-3 py-1.5 rounded-lg border border-border/50 truncate">
+            Root / {currentPath.replace(/\\/g, '/')}
           </div>
         </div>
-        <Button variant="outline" className="gap-2" onClick={() => fetchFiles(currentPath)}>
+        <Button variant="outline" className="gap-2 shrink-0" onClick={() => fetchFiles(currentPath)}>
           <RefreshCcw className="w-4 h-4" /> Yenile
         </Button>
       </div>
 
-      {/* Breadcrumb & Back */}
-      <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-xl border border-border/50">
-        <Button variant="ghost" size="sm" onClick={handleBack} disabled={!currentPath || loading}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Geri
-        </Button>
-        <div className="text-sm font-medium text-foreground opacity-80 font-mono bg-background px-3 py-1.5 rounded-lg border border-border/50">
-          Root / {currentPath.replace(/\\/g, '/')}
+      {error && (
+        <div className="p-4 bg-red-500/10 text-red-500 rounded-xl text-sm border border-red-500/20">
+          {error}
         </div>
-      </div>
+      )}
 
       {/* File List */}
       <div className="bg-card border border-border/50 rounded-2xl overflow-hidden shadow-sm">

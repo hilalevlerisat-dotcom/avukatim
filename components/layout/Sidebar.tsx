@@ -39,8 +39,7 @@ interface NavItem {
 
 const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'dashboard',      href: '/',                icon: LayoutDashboard, label: 'Dashboard',       description: 'Genel bakış' },
-  { id: 'dosyalar',       href: '/dosyalar',        icon: FolderOpen,      label: 'Dosyalar',        description: 'Tüm davalar' },
-  { id: 'yerel-arsiv',    href: '/yerel-arsiv',     icon: HardDrive,       label: 'Yerel Arşiv',     description: 'Büyük boyutlu arşiv' },
+  { id: 'dosyalar',       href: '/dosyalar',        icon: HardDrive,       label: 'Dosyalar',        description: 'Yerel arşiv (36GB+)' },
   { id: 'muvekkiller',   href: '/muvekkiller',     icon: Users,           label: 'Müvekkiller',    description: 'Müvekkil listesi' },
   { id: 'takvim',        href: '/takvim',          icon: CalendarDays,    label: 'Takvim',          description: 'Duruşma & süreler' },
   { id: 'finans',        href: '/finans',          icon: Wallet,          label: 'Finans',          description: 'Vekalet & ödemeler' },

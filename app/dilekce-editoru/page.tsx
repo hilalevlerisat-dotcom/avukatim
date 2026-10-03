@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
 import type { Client } from '@/lib/database.types'
-import JSZip from 'jszip'
+import { buildUdfBlob } from '@/lib/udf'
 
 const TEMPLATE_TYPES = [
   'Dava Dilekçesi',
@@ -75,31 +75,12 @@ export default function DilekceEditoru() {
     }
   }
 
-  // Basit bir XML yapısı ile UDF (UYAP Bilişim Sistemi) Zip dosyası oluştur
+  // Gerçek UYAP .udf biçiminde (ZIP içinde content.xml, format_id 1.8) dosya oluştur
   const handleDownloadUDF = async () => {
     if (!resultText) return
 
-    // UYAP Editör'ün okuyabildiği basit XML formatına dönüştür (her paragrafı ayır)
-    const paragraphs = resultText.split('\n').filter(p => p.trim() !== '')
-    
-    // Geçerli bir UYAP XML iskeleti
-    let xmlString = `<?xml version="1.0" encoding="UTF-8"?>
-<document format="1.0">
-  <content>
-`
-    paragraphs.forEach(p => {
-      xmlString += `    <paragraph>
-      <text><![CDATA[${p}]]></text>
-    </paragraph>\n`
-    })
-    
-    xmlString += `  </content>
-</document>`
-
     try {
-      const zip = new JSZip()
-      zip.file('content.xml', xmlString)
-      const blob = await zip.generateAsync({ type: 'blob' })
+      const blob = await buildUdfBlob(resultText)
       
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')

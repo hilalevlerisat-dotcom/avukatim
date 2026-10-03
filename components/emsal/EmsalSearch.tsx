@@ -67,7 +67,13 @@ export default function EmsalSearch() {
         })
       })
 
-      const data = await res.json()
+      const raw = await res.text()
+      let data: any
+      try {
+        data = JSON.parse(raw)
+      } catch {
+        throw new Error(`Sunucu yanıt vermedi (${res.status}). Büyük olasılıkla zaman aşımı; birkaç saniye sonra tekrar deneyin.`)
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Arama sırasında hata oluştu.')
       }

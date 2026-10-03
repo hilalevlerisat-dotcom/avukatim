@@ -31,15 +31,24 @@ const OPENAI_COMPAT: OpenAICompat[] = [
 
 const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-flash-latest']
 
-async function callOpenAICompat(p: OpenAICompat, prompt: string, temperature: number, errors: string[]): Promise<string> {
+/** Vercel fonksiyon süresini aşmamak için toplam süre bütçesi (ms) */
+const TOTAL_BUDGET_MS = 50000
+
+async function callOpenAICompat(p: OpenAICompat, prompt: string, temperature: number, errors: string[], deadline: number): Promise<string> {
   const key = process.env[p.envKey]
   if (!key) return ''
   for (const model of p.models) {
+    const remaining = deadline - Date.now()
+    if (remaining < 4000) {
+      errors.push(`${p.name}: süre doldu`)
+      return ''
+    }
     try {
       const res = await fetch(`${p.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
         body: JSON.stringify({ model, temperature, messages: [{ role: 'user', content: prompt }] }),
+        signal: AbortSignal.timeout(Math.min(remaining - 1000, 18000)),
       })
       const data: any = await res.json().catch(() => ({}))
       const text = data?.choices?.[0]?.message?.content
@@ -61,6 +70,7 @@ export async function webSearchContext(query: string): Promise<{ context: string
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify({ query: `${query} Yargıtay karar esas karar`, max_results: 6, search_depth: 'advanced' }),
+      signal: AbortSignal.timeout(8000),
     })
     const data: any = await res.json()
     const results: any[] = data?.results || []
@@ -84,18 +94,28 @@ export async function generateWithFallback(
 ): Promise<{ result: GenResult | null; errors: string[] }> {
   const errors: string[] = []
   const temperature = opts.temperature ?? 0.3
+  const deadline = Date.now() + TOTAL_BUDGET_MS
 
   // 1) Gemini
   const geminiKey = process.env.GEMINI_API_KEY
   if (geminiKey) {
     const ai = new GoogleGenAI({ apiKey: geminiKey })
     for (const model of GEMINI_MODELS) {
+      // Gemini'ye en fazla ~25 sn ayır, diğer sağlayıcılara süre kalsın
+      const gemRemaining = Math.min(25000, deadline - Date.now() - 20000)
+      if (gemRemaining < 3000) {
+        errors.push('Gemini: süre ayrılan sınıra ulaştı')
+        break
+      }
       try {
-        const res: any = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: { temperature, ...(opts.search ? { tools: [{ googleSearch: {} }] } : {}) },
-        })
+        const res: any = await Promise.race([
+          ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: { temperature, ...(opts.search ? { tools: [{ googleSearch: {} }] } : {}) },
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('zaman aşımı')), gemRemaining)),
+        ])
         const t = res?.text
         if (t && t.trim()) {
           const chunks = res?.candidates?.[0]?.groundingMetadata?.groundingChunks || []
@@ -122,7 +142,7 @@ export async function generateWithFallback(
   const fallbackPrompt = opts.buildFallbackPrompt ? opts.buildFallbackPrompt(webContext) : prompt
 
   for (const p of OPENAI_COMPAT) {
-    const text = await callOpenAICompat(p, fallbackPrompt, temperature, errors)
+    const text = await callOpenAICompat(p, fallbackPrompt, temperature, errors, deadline)
     if (text) return { result: { text, provider: p.name, sources: webSources }, errors }
   }
 

@@ -38,6 +38,8 @@ KATI KURALLAR:
       temperature: 0.3,
       searchQuery: cleanQuery,
       buildFallbackPrompt,
+      // En az bir "E. 2021/1234" benzeri karar numarası içermeyen yanıt kabul edilmez
+      validate: (t: string) => /\b(E\.?|Esas)\s*(No)?\s*[:.]?\s*\d{4}\s*\/\s*\d+/i.test(t) || /\d{4}\s*\/\s*\d+\s*(E\.?|Esas)/i.test(t),
     });
 
     if (!result) {

@@ -18,6 +18,7 @@ import {
   Database
 } from 'lucide-react'
 import EmsalDetailModal from './EmsalDetailModal'
+import MarkdownView from './MarkdownView'
 
 const QUICK_PROMPTS = [
   'Tahliye taahhütnamesinde düzenleme ve tahliye tarihlerinin boş bırakılması',
@@ -279,7 +280,7 @@ export default function EmsalSearch() {
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Yalnızca eşleşen {decisions.length} adet emsal kararın gerekçeleri sentezlenmiştir.
+                  Canlı web araması ve yapay zeka ile hazırlanmıştır. Karar numaralarını UYAP/Kazancı'da teyit ediniz.
                 </p>
               </div>
             </div>
@@ -294,9 +295,7 @@ export default function EmsalSearch() {
           </div>
 
           {/* Analysis Markdown Content */}
-          <div className="text-xs sm:text-sm text-foreground/90 space-y-3 leading-relaxed whitespace-pre-wrap font-sans">
-            {analysis}
-          </div>
+          <MarkdownView content={analysis} />
         </motion.div>
       )}
 

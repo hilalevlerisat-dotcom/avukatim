@@ -415,6 +415,7 @@ export default function MuvekkilDetayClient({ id }: MuvekkilDetayClientProps) {
                 </div>
               ))}
             </div>
+          )}
         </TabsContent>
 
         {/* Local Folder Content */}

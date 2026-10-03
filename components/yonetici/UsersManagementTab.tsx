@@ -116,6 +116,7 @@ export default function UsersManagementTab() {
     hesaplamalar: 'Hesaplamalar',
     yonetici: 'Yönetici Ekranı',
     'emsal-kararlar': 'Emsal Kararlar',
+    'dilekce-editoru': 'Dilekçe Editörü',
   }
 
   return (

@@ -19,6 +19,7 @@ import {
   LogOut,
   ShieldCheck,
   RotateCcw,
+  PenTool,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -44,6 +45,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { id: 'hatirlaticilar', href: '/hatirlaticilar', icon: Bell,            label: 'Hatırlatıcılar', description: 'Bildirimler' },
   { id: 'hesaplamalar',  href: '/hesaplamalar',    icon: Calculator,      label: 'Hesaplamalar',    description: 'Süre & Faiz hesaplama' },
   { id: 'emsal-kararlar', href: '/emsal-kararlar', icon: Scale,           label: 'Emsal Kararlar',  description: 'AI ile içtihat arama', badge: 'AI' },
+  { id: 'dilekce-editoru', href: '/dilekce-editoru', icon: PenTool,       label: 'Dilekçe Editörü', description: 'AI Destekli Şablonlar', badge: 'AI' },
   { id: 'yonetici',      href: '/yonetici',        icon: ShieldCheck,     label: 'Yönetici Ekranı', description: 'Profil & Yetkiler' },
 ]
 

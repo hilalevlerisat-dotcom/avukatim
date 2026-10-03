@@ -7,6 +7,7 @@ export type PanelPermission =
   | 'hatirlaticilar'
   | 'hesaplamalar'
   | 'emsal-kararlar'
+  | 'dilekce-editoru'
   | 'yonetici'
 
 export interface PanelDefinition {
@@ -64,6 +65,12 @@ export const AVAILABLE_PANELS: PanelDefinition[] = [
     label: 'Emsal Kararlar (AI RAG)',
     description: 'Yargıtay ve Danıştay emsal kararlarında semantik arama',
     route: '/emsal-kararlar',
+  },
+  {
+    id: 'dilekce-editoru',
+    label: 'Dilekçe Editörü',
+    description: 'Yapay Zeka Destekli UYAP Şablon Oluşturucu',
+    route: '/dilekce-editoru',
   },
   {
     id: 'yonetici',

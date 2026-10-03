@@ -31,6 +31,7 @@ import {
   Check,
   Sparkles,
   Scale,
+  PenTool,
 } from 'lucide-react'
 import {
   SystemUser,
@@ -55,6 +56,7 @@ const PANEL_ICONS: Record<PanelPermission, React.ComponentType<{ className?: str
   hesaplamalar: Calculator,
   yonetici: ShieldCheck,
   'emsal-kararlar': Scale,
+  'dilekce-editoru': PenTool,
 }
 
 export default function UserEditDialog({

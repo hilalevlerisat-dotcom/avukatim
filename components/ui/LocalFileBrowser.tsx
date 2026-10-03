@@ -241,7 +241,7 @@ export default function LocalFileBrowser({ initialPath = '' }: LocalFileBrowserP
                 {previewItem?.name}
               </DialogTitle>
               {(previewType === 'text' || previewType === 'pdf') && !aiAnalysis && (
-                <Button onClick={handleAnalyze} disabled={analyzing || previewLoading} size="sm" className="gap-2">
+                <Button onClick={handleAnalyze} disabled={analyzing || previewLoading} size="sm" className="gap-2 mr-8">
                   <Sparkles className="w-4 h-4" /> {analyzing ? 'Analiz Ediliyor...' : 'AI ile Analiz Et'}
                 </Button>
               )}

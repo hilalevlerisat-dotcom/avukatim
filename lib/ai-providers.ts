@@ -21,8 +21,8 @@ interface OpenAICompat {
 
 const OPENAI_COMPAT: OpenAICompat[] = [
   // Ücretsiz katmanı olanlar
-  { name: 'Groq', envKey: 'GROQ_API_KEY', baseUrl: 'https://api.groq.com/openai/v1', models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'] },
-  { name: 'OpenRouter', envKey: 'OPENROUTER_API_KEY', baseUrl: 'https://openrouter.ai/api/v1', models: ['nvidia/nemotron-3-ultra-550b-a55b:free', 'thinkingmachines/inkling:free', 'nvidia/nemotron-3-super-120b-a12b:free', 'google/gemma-4-31b-it:free', 'thinkingmachines/inkling-small:free'] },
+  { name: 'Groq', envKey: 'GROQ_API_KEY', baseUrl: 'https://api.groq.com/openai/v1', models: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3-32b', 'meta-llama/llama-4-scout-17b-16e-instruct', 'llama-3.3-70b-versatile'] },
+  { name: 'OpenRouter', envKey: 'OPENROUTER_API_KEY', baseUrl: 'https://openrouter.ai/api/v1', models: ['openrouter/free', 'nvidia/nemotron-3-super-120b-a12b:free', 'nvidia/nemotron-3-ultra-550b-a55b:free', 'google/gemma-4-31b-it:free'] },
   { name: 'Mistral', envKey: 'MISTRAL_API_KEY', baseUrl: 'https://api.mistral.ai/v1', models: ['mistral-small-latest'] },
   // Ücretli/ucuz (anahtar varsa)
   { name: 'DeepSeek', envKey: 'DEEPSEEK_API_KEY', baseUrl: 'https://api.deepseek.com/v1', models: ['deepseek-chat'] },
@@ -47,7 +47,7 @@ async function callOpenAICompat(p: OpenAICompat, prompt: string, temperature: nu
       const res = await fetch(`${p.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model, temperature, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model, temperature, max_tokens: 4096, messages: [{ role: 'user', content: prompt }] }),
         signal: AbortSignal.timeout(Math.min(remaining - 1000, 18000)),
       })
       const data: any = await res.json().catch(() => ({}))

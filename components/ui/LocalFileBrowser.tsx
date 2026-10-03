@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Folder, FileText, Download, ArrowLeft, RefreshCcw, Eye, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 const LOCAL_SERVER_URL = 'http://localhost:4000'
 
@@ -263,11 +262,11 @@ export default function LocalFileBrowser({ initialPath = '' }: LocalFileBrowserP
               ) : previewType === 'pdf' ? (
                 <iframe src={previewContent} className="w-full h-full border-0" />
               ) : previewType === 'text' ? (
-                <ScrollArea className="flex-1 p-6">
+                <div className="flex-1 p-6 overflow-y-auto">
                   <div className="whitespace-pre-wrap font-mono text-sm opacity-90 leading-relaxed">
                     {previewContent}
                   </div>
-                </ScrollArea>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
                   <p className="mb-4">Bu dosya formatının doğrudan önizlemesi desteklenmiyor.</p>
@@ -284,13 +283,13 @@ export default function LocalFileBrowser({ initialPath = '' }: LocalFileBrowserP
                 <div className="p-3 border-b border-border/50 font-semibold text-sm flex items-center gap-2 bg-indigo-500/5 text-indigo-600 dark:text-indigo-400">
                   <Sparkles className="w-4 h-4" /> Yapay Zeka Analizi
                 </div>
-                <ScrollArea className="flex-1 p-4">
+                <div className="flex-1 p-4 overflow-y-auto">
                   <div className="prose prose-sm dark:prose-invert">
                     {aiAnalysis.split('\n').map((line, i) => (
                       <p key={i} className="mb-2">{line}</p>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
             )}
           </div>

@@ -8,6 +8,7 @@ export type PanelPermission =
   | 'hesaplamalar'
   | 'emsal-kararlar'
   | 'dilekce-editoru'
+  | 'yerel-arsiv'
   | 'yonetici'
 
 export interface PanelDefinition {
@@ -71,6 +72,12 @@ export const AVAILABLE_PANELS: PanelDefinition[] = [
     label: 'Dilekçe Editörü',
     description: 'Yapay Zeka Destekli UYAP Şablon Oluşturucu',
     route: '/dilekce-editoru',
+  },
+  {
+    id: 'yerel-arsiv',
+    label: 'Yerel Arşiv (36GB+)',
+    description: 'Büyük dava dosyalarına bulutsuz doğrudan yerel erişim',
+    route: '/yerel-arsiv',
   },
   {
     id: 'yonetici',

@@ -115,14 +115,19 @@ export default function MuvekkillerClient() {
                 let count = 0;
                 for (const c of data.clients) {
                   if (!clients.find(existing => existing.full_name === c.full_name)) {
-                    await supabase.from('clients').insert({
+                    const { error } = await supabase.from('clients').insert({
                       user_id: authData.user.id,
                       full_name: c.full_name,
                       notes: c.notes,
                       client_type: c.client_type,
                       is_active: true
                     });
-                    count++;
+                    if (error) {
+                      console.error('Insert error:', error);
+                      alert('Bazı kayıtlar eklenemedi: ' + error.message);
+                    } else {
+                      count++;
+                    }
                   }
                 }
                 alert(`İşlem tamamlandı. ${count} yeni müvekkil eklendi.`);

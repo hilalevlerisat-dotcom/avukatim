@@ -138,7 +138,7 @@ app.get('/api/sync-clients', (req, res) => {
       clientsToImport.push({
         full_name: name,
         notes: 'Kategori: Ortak Dosya (Av. Süleyman KAYA)',
-        client_type: 'bireysel'
+        client_type: 'individual'
       });
     });
 
@@ -149,7 +149,7 @@ app.get('/api/sync-clients', (req, res) => {
       clientsToImport.push({
         full_name: name,
         notes: 'Kategori: Hukuk Dosyası',
-        client_type: 'bireysel'
+        client_type: 'individual'
       });
     });
 
@@ -159,7 +159,7 @@ app.get('/api/sync-clients', (req, res) => {
       clientsToImport.push({
         full_name: name,
         notes: 'Kategori: Ceza Dosyası',
-        client_type: 'bireysel'
+        client_type: 'individual'
       });
     });
 

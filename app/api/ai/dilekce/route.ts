@@ -25,8 +25,18 @@ KURALLAR:
 5. Müvekkil bilgileri verilmişse, davacı/davalı kısımlarına yerleştir.
 6. Sonuç ve İstem kısmını kesin, net ve hukuki bir dille yaz.`
 
-    const prompt = `DİLEKÇE TÜRÜ: ${type}
-${clientInfoStr}
+    const { template } = body;
+    let templateContext = '';
+    if (template) {
+      templateContext = `SEÇİLEN ŞABLON TÜRÜ: ${template.title}
+ŞABLON KATEGORİSİ: ${template.category}
+
+`;
+    } else {
+      templateContext = `DİLEKÇE TÜRÜ: ${type}\n\n`;
+    }
+
+    const prompt = `${templateContext}${clientInfoStr}
 
 OLAY ÖRGÜSÜ VE AÇIKLAMALAR:
 ${explanations}

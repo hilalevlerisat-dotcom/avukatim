@@ -179,6 +179,17 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['documents']['Row'], 'id' | 'uploaded_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['documents']['Insert']>
       }
+      dilekce_templates: {
+        Row: {
+          id: string
+          category: string
+          title: string
+          url: string | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['dilekce_templates']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['dilekce_templates']['Insert']>
+      }
     }
     Views: {
       v_client_financial_summary: {
@@ -216,6 +227,7 @@ export type Hearing = Database['public']['Tables']['hearings']['Row']
 export type Deadline = Database['public']['Tables']['deadlines']['Row']
 export type FinanceRecord = Database['public']['Tables']['finance_records']['Row']
 export type Reminder = Database['public']['Tables']['reminders']['Row']
+export type DilekceTemplate = Database['public']['Tables']['dilekce_templates']['Row']
 export type ClientFinancialSummary = Database['public']['Views']['v_client_financial_summary']['Row']
 export type UpcomingEvent = Database['public']['Views']['v_upcoming_events']['Row']
 

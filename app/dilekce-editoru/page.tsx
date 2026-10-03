@@ -8,24 +8,15 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
-import type { Client } from '@/lib/database.types'
+import type { Client, DilekceTemplate } from '@/lib/database.types'
 import { buildUdfBlob } from '@/lib/udf'
 
-const TEMPLATE_TYPES = [
-  'Dava Dilekçesi',
-  'Cevap Dilekçesi',
-  'İstinaf Dilekçesi',
-  'Temyiz Dilekçesi',
-  'İcra Takibi Talebi',
-  'İtiraz Dilekçesi',
-  'Beyan Dilekçesi',
-  'İhtiyati Haciz Talebi',
-  'Tensip Zaptı Beyanı',
-]
+import fallbackTemplates from '@/scripts/dilekce_templates.json'
 
 export default function DilekceEditoru() {
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClientId, setSelectedClientId] = useState('')
+  const [templates, setTemplates] = useState<DilekceTemplate[]>([])
   const [templateType, setTemplateType] = useState('Dava Dilekçesi')
   const [explanations, setExplanations] = useState('')
   const [precedents, setPrecedents] = useState('')
@@ -34,13 +25,37 @@ export default function DilekceEditoru() {
   const [resultText, setResultText] = useState('')
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       const supabase = createClient()
-      const { data } = await supabase.from('clients').select('*').order('full_name')
-      if (data) setClients(data as Client[])
+      const { data: clientsData } = await supabase.from('clients').select('*').order('full_name')
+      if (clientsData) setClients(clientsData as Client[])
+
+      const { data: templatesData, error } = await supabase.from('dilekce_templates').select('*')
+      if (templatesData && templatesData.length > 0) {
+        setTemplates(templatesData as DilekceTemplate[])
+        setTemplateType(templatesData[0].title)
+      } else {
+        // Fallback to JSON if table is not seeded or doesn't exist
+        const mappedFallback = (fallbackTemplates as any[]).map((t, i) => ({
+          id: String(i),
+          category: t.category,
+          title: t.title,
+          url: t.url,
+          created_at: new Date().toISOString()
+        }))
+        setTemplates(mappedFallback)
+        if (mappedFallback.length > 0) setTemplateType(mappedFallback[0].title)
+      }
     }
-    fetchClients()
+    fetchData()
   }, [])
+
+  // Group templates by category
+  const groupedTemplates = templates.reduce((acc, curr) => {
+    if (!acc[curr.category]) acc[curr.category] = []
+    acc[curr.category].push(curr)
+    return acc
+  }, {} as Record<string, DilekceTemplate[]>)
 
   const handleGenerate = async () => {
     if (!explanations.trim()) {
@@ -52,12 +67,15 @@ export default function DilekceEditoru() {
     
     try {
       const client = clients.find(c => c.id === selectedClientId)
+      const selectedTemplate = templates.find(t => t.title === templateType)
+      
       const res = await fetch('/api/ai/dilekce', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           client: client || null,
           type: templateType,
+          template: selectedTemplate,
           explanations,
           precedents
         })
@@ -127,9 +145,15 @@ export default function DilekceEditoru() {
                   <select 
                     value={templateType}
                     onChange={(e) => setTemplateType(e.target.value)}
-                    className="flex h-9 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {TEMPLATE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {Object.entries(groupedTemplates).map(([category, items]) => (
+                      <optgroup key={category} label={category}>
+                        {items.map(t => (
+                          <option key={t.id} value={t.title}>{t.title}</option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
 

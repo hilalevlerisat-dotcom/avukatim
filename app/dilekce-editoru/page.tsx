@@ -17,7 +17,9 @@ export default function DilekceEditoru() {
   const [clients, setClients] = useState<Client[]>([])
   const [selectedClientId, setSelectedClientId] = useState('')
   const [templates, setTemplates] = useState<DilekceTemplate[]>([])
-  const [templateType, setTemplateType] = useState('Dava Dilekçesi')
+  const [selectedCategory, setSelectedCategory] = useState<string>('Tümü')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [templateType, setTemplateType] = useState('')
   const [explanations, setExplanations] = useState('')
   const [precedents, setPrecedents] = useState('')
   
@@ -50,12 +52,21 @@ export default function DilekceEditoru() {
     fetchData()
   }, [])
 
-  // Group templates by category
-  const groupedTemplates = templates.reduce((acc, curr) => {
-    if (!acc[curr.category]) acc[curr.category] = []
-    acc[curr.category].push(curr)
-    return acc
-  }, {} as Record<string, DilekceTemplate[]>)
+  // Derived states
+  const categories = ['Tümü', ...Array.from(new Set(templates.map(t => t.category)))]
+  
+  const filteredTemplates = templates.filter(t => {
+    const matchCategory = selectedCategory === 'Tümü' || t.category === selectedCategory;
+    const matchSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCategory && matchSearch;
+  });
+
+  // Auto-select first template when filters change
+  useEffect(() => {
+    if (filteredTemplates.length > 0 && !filteredTemplates.some(t => t.title === templateType)) {
+      setTemplateType(filteredTemplates[0].title);
+    }
+  }, [selectedCategory, searchQuery, templates])
 
   const handleGenerate = async () => {
     if (!explanations.trim()) {
@@ -140,19 +151,42 @@ export default function DilekceEditoru() {
               </h2>
 
               <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Kategori Seçimi</Label>
+                    <select 
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Şablon Ara</Label>
+                    <div className="relative">
+                      <FileSearch className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Örn: kiralanan..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 h-10 rounded-xl"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Dilekçe Türü</Label>
+                  <Label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Dilekçe Şablonu</Label>
                   <select 
                     value={templateType}
                     onChange={(e) => setTemplateType(e.target.value)}
                     className="flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    {Object.entries(groupedTemplates).map(([category, items]) => (
-                      <optgroup key={category} label={category}>
-                        {items.map(t => (
-                          <option key={t.id} value={t.title}>{t.title}</option>
-                        ))}
-                      </optgroup>
+                    {filteredTemplates.length === 0 && <option value="" disabled>Sonuç bulunamadı...</option>}
+                    {filteredTemplates.map(t => (
+                      <option key={t.id} value={t.title}>{t.title}</option>
                     ))}
                   </select>
                 </div>

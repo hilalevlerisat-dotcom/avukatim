@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server'
-import { GoogleGenAI } from '@google/genai'
+import { generateWithFallback } from '@/lib/ai-providers'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { client, type, explanations, precedents } = body
 
-    const geminiKey = process.env.GEMINI_API_KEY
-    if (!geminiKey) {
-      return NextResponse.json({ success: false, message: 'Yapay zeka API anahtarı eksik.' }, { status: 500 })
-    }
-
-    const ai = new GoogleGenAI({ apiKey: geminiKey })
-    const model = 'gemini-3.8-flash'
 
     let clientInfoStr = ''
     if (client) {
@@ -43,26 +36,18 @@ ${precedents || 'Yok'}
 
 Lütfen yukarıdaki bilgilere göre eksiksiz bir dilekçe metni oluştur. (Sadece metin, markdown işaretleri olmadan)`
 
-    const genResponse = await ai.models.generateContent({
-      model,
-      contents: [
-        {
-          role: 'user',
-          parts: [{ text: `${systemPrompt}\n\n${prompt}` }]
-        }
-      ],
-      config: {
-        temperature: 0.2 // Dilekçe ciddi ve formatlı olmalı
-      }
+    const { result, errors } = await generateWithFallback(`${systemPrompt}\n\n${prompt}`, {
+      temperature: 0.2 // Dilekçe ciddi ve formatlı olmalı
     })
 
-    if (!genResponse.text) {
-      throw new Error('AI boş yanıt döndürdü.')
+    if (!result) {
+      throw new Error('Hiçbir yapay zeka servisine ulaşılamadı: ' + errors.join(' | '))
     }
 
     return NextResponse.json({
       success: true,
-      text: genResponse.text.trim()
+      text: result.text.trim(),
+      provider: result.provider
     })
 
   } catch (error: any) {

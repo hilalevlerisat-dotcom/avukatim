@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { generateWithFallback } from '@/lib/ai-providers';
 
 export const maxDuration = 60;
 
@@ -12,27 +12,11 @@ export async function POST(req: Request) {
     }
 
     const cleanQuery = query.trim();
-    const geminiKey = process.env.GEMINI_API_KEY;
-
-    if (!geminiKey) {
-      return NextResponse.json({
-        success: true,
-        query: cleanQuery,
-        matchedCount: 0,
-        decisions: [],
-        analysis: null,
-        message: 'GEMINI_API_KEY ortam değişkeni tanımlı değil. Vercel > Settings > Environment Variables bölümüne ekleyip yeniden deploy edin.'
-      });
-    }
-
-    const ai = new GoogleGenAI({ apiKey: geminiKey });
 
     const systemPrompt = `Sen bir Kıdemli Hukuk Müşaviri ve Yargıtay İçtihat Analistisin.
-Google Arama aracını kullanarak internetteki GÜNCEL VE GERÇEK Yargıtay / Danıştay / AYM kararlarını araştır.
-
 KATI KURALLAR:
-1. Sadece arama sonuçlarında gerçekten bulduğun kararları (Daire, Esas No, Karar No, Tarih) belirt.
-2. ASLA karar numarası uydurma. Emin değilsen o bilgiyi "belirtilmemiş" yaz.
+1. Sadece gerçekten bulduğun/verilen kaynaklardaki kararları (Daire, Esas No, Karar No, Tarih) belirt.
+2. ASLA karar numarası uydurma. Emin değilsen "belirtilmemiş" yaz.
 3. Çıktının en başına şunu koy: "> 🌐 **Web Ajanı Notu:** Aşağıdaki kararlar canlı internet araması ile bulunmuştur."
 4. Çıktıyı şu Markdown başlıklarıyla yapılandır:
 
@@ -40,59 +24,45 @@ KATI KURALLAR:
 ### 📌 Uygulanacak Şartlar ve İspat Kuralları
 ### 📑 İnternetten Bulunan Emsal Kararlar`;
 
-    const prompt = `${systemPrompt}\n\nHukuki soru:\n"${cleanQuery}"`;
+    // Gemini: Google Search ile kendisi arar
+    const geminiPrompt = `${systemPrompt}\n\nGoogle Arama aracını kullanarak güncel Yargıtay/Danıştay/AYM kararlarını araştır.\nHukuki soru:\n"${cleanQuery}"`;
 
-    const modelsToTry = ['gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-flash-latest'];
+    // Diğer modeller: Tavily web sonuçları verilir; sonuç yoksa karar numarası vermeleri yasaklanır
+    const buildFallbackPrompt = (webContext: string) =>
+      webContext
+        ? `${systemPrompt}\n\nYALNIZCA aşağıdaki web arama sonuçlarına dayan; sonuçlarda geçmeyen karar numarası YAZMA.\n\nHukuki soru:\n"${cleanQuery}"\n\nWEB ARAMA SONUÇLARI:\n${webContext}`
+        : `Sen bir Kıdemli Hukuk Müşavirisin. İnternet erişimin YOK. Bu yüzden ASLA Esas No / Karar No / tarih verme veya uydurma.\nSadece konuyla ilgili genel hukuki ilkeleri, ilgili kanun maddelerini ve Yargıtay'ın bu konudaki genel yerleşik yaklaşımını anlat; en başa şunu koy: "> ⚠️ **Not:** Canlı web araması yapılamadı, aşağıda kesin karar numarası yoktur. Karar numaralarını UYAP/Kazancı/Lexpera'da doğrulayın."\nBaşlıklar: ### ⚖️ Hukuki Sonuç & İçtihat Özeti, ### 📌 Uygulanacak Şartlar ve İspat Kuralları, ### 🔎 Araştırılması Önerilen Anahtar Kelimeler\n\nHukuki soru:\n"${cleanQuery}"`;
 
-    let text = '';
-    let sources: { title: string; uri: string }[] = [];
-    const errors: string[] = [];
+    const { result, errors } = await generateWithFallback(geminiPrompt, {
+      search: true,
+      temperature: 0.3,
+      searchQuery: cleanQuery,
+      buildFallbackPrompt,
+    });
 
-    for (const model of modelsToTry) {
-      try {
-        const res: any = await ai.models.generateContent({
-          model,
-          contents: prompt,
-          config: { tools: [{ googleSearch: {} }], temperature: 0.3 }
-        });
-
-        const t = res?.text;
-        if (t && t.trim()) {
-          text = t;
-          const chunks = res?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-          sources = chunks
-            .filter((c: any) => c?.web?.uri)
-            .map((c: any) => ({ title: c.web.title || c.web.uri, uri: c.web.uri }));
-          break;
-        }
-        errors.push(`${model}: boş yanıt`);
-      } catch (e: any) {
-        console.warn(`Model ${model} başarısız:`, e?.message || e);
-        errors.push(`${model}: ${String(e?.message || e).slice(0, 200)}`);
-      }
-    }
-
-    if (!text) {
+    if (!result) {
       return NextResponse.json({
         success: true,
         query: cleanQuery,
         matchedCount: 0,
         decisions: [],
         analysis: null,
-        message: 'Canlı web taraması başarısız oldu. Teknik detay: ' + errors.join(' | ')
+        message: 'Hiçbir yapay zeka servisine ulaşılamadı. Teknik detay: ' + errors.join(' | ')
       });
     }
 
-    if (sources.length > 0) {
+    let text = result.text;
+    if (result.sources.length > 0) {
       const seen = new Set<string>();
-      const uniq = sources.filter(s => (seen.has(s.uri) ? false : (seen.add(s.uri), true)));
+      const uniq = result.sources.filter(s => (seen.has(s.uri) ? false : (seen.add(s.uri), true)));
       text += `\n\n### 🔗 Kaynaklar\n` + uniq.map(s => `- [${s.title}](${s.uri})`).join('\n');
     }
+    text += `\n\n---\n*Yanıtı üreten servis: ${result.provider}*`;
 
     return NextResponse.json({
       success: true,
       query: cleanQuery,
-      matchedCount: sources.length,
+      matchedCount: result.sources.length,
       decisions: [],
       analysis: text
     });

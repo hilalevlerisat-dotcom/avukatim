@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     let clientInfoStr = ''
     if (client) {
-      clientInfoStr = `MÜVEKKİL BİLGİLERİ:\nAd Soyad/Unvan: ${client.full_name}\nTC/VKN: ${client.tc_tax_number || 'Belirtilmedi'}\nAdres: ${client.address || 'Belirtilmedi'}\nTelefon: ${client.phone || 'Belirtilmedi'}\n`
+      clientInfoStr = `MÜVEKKİL BİLGİLERİ:\nAd Soyad/Unvan: ${client.full_name}${client.company_name ? ` (${client.company_name})` : ''}\nTC/VKN: ${client.tc_no || 'Belirtilmedi'}\nAdres: ${client.address || 'Belirtilmedi'}\nTelefon: ${client.phone || 'Belirtilmedi'}\n`
     } else {
       clientInfoStr = 'MÜVEKKİL BİLGİLERİ: (Belirtilmedi, boşluk bırakılacak)'
     }

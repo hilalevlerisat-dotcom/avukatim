@@ -142,7 +142,7 @@ export default function DilekceEditoru() {
                   >
                     <option value="">-- Boş Bırak / Sistemden Seçme --</option>
                     {clients.map(c => (
-                      <option key={c.id} value={c.id}>{c.full_name} ({c.tc_tax_number || 'TC Yok'})</option>
+                      <option key={c.id} value={c.id}>{c.full_name} ({c.tc_no || 'TC Yok'})</option>
                     ))}
                   </select>
                 </div>

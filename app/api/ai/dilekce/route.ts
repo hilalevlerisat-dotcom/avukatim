@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     }
 
     const ai = new GoogleGenAI({ apiKey: geminiKey })
-    const model = 'gemini-2.0-flash'
+    const model = 'gemini-3.8-flash'
 
     let clientInfoStr = ''
     if (client) {

@@ -42,7 +42,7 @@ KATI KURALLAR:
 
     const prompt = `${systemPrompt}\n\nHukuki soru:\n"${cleanQuery}"`;
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-flash-latest'];
+    const modelsToTry = ['gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-flash-latest'];
 
     let text = '';
     let sources: { title: string; uri: string }[] = [];

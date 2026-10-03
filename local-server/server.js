@@ -10,7 +10,7 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // The base directory where the 36GB files are stored.
-const BASE_DIR = process.env.BASE_DIR || 'C:\\Users\\CASPER\\Desktop\\MASAÜSTÜ içindekiler';
+const BASE_DIR = process.env.BASE_DIR || 'C:\\Users\\CASPER\\Desktop\\ARŞİV';
 
 app.use(cors());
 app.use(express.json());
@@ -111,6 +111,59 @@ app.get('/api/download', (req, res) => {
     const stream = fs.createReadStream(targetPath);
     stream.pipe(res);
 
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/sync-clients', (req, res) => {
+  try {
+    if (!fs.existsSync(BASE_DIR)) {
+      return res.status(404).json({ error: 'Arşiv klasörü bulunamadı.' });
+    }
+
+    const clientsToImport = [];
+
+    // Helper to read directories safely
+    const getDirs = (dirPath) => {
+      if (!fs.existsSync(dirPath)) return [];
+      return fs.readdirSync(dirPath).filter(f => fs.statSync(path.join(dirPath, f)).isDirectory());
+    };
+
+    // 1. Ortak Dosyalar (Av. Süleyman KAYA altındakiler)
+    const suleymanDir = path.join(BASE_DIR, 'Av. Süleyman KAYA');
+    const ortaklar = getDirs(suleymanDir);
+    ortaklar.forEach(name => {
+      clientsToImport.push({
+        full_name: name,
+        notes: 'Kategori: Ortak Dosya (Av. Süleyman KAYA)',
+        client_type: 'bireysel'
+      });
+    });
+
+    // 2. Kendi Müvekkillerim (Hukuk ve Ceza altındakiler)
+    const hukukDir = path.join(BASE_DIR, 'Hukuk');
+    const hukukClients = getDirs(hukukDir);
+    hukukClients.forEach(name => {
+      clientsToImport.push({
+        full_name: name,
+        notes: 'Kategori: Hukuk Dosyası',
+        client_type: 'bireysel'
+      });
+    });
+
+    const cezaDir = path.join(BASE_DIR, 'Ceza');
+    const cezaClients = getDirs(cezaDir);
+    cezaClients.forEach(name => {
+      clientsToImport.push({
+        full_name: name,
+        notes: 'Kategori: Ceza Dosyası',
+        client_type: 'bireysel'
+      });
+    });
+
+    res.json({ success: true, clients: clientsToImport });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });

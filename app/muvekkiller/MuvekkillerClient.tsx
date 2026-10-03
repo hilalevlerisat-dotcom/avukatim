@@ -101,6 +101,41 @@ export default function MuvekkillerClient() {
               className="pl-9 h-9 w-48 text-sm"
             />
           </div>
+          <Button variant="outline" className="gap-2 h-9" onClick={async () => {
+            if (!confirm('Yerel arşiv klasöründen (ARŞİV) müvekkiller içe aktarılsın mı?')) return;
+            try {
+              const res = await fetch('http://localhost:4000/api/sync-clients');
+              if (!res.ok) throw new Error('Yerel sunucuya bağlanılamadı. Sunucu açık mı?');
+              const data = await res.json();
+              if (data.clients && data.clients.length > 0) {
+                const supabase = createClient();
+                const { data: authData } = await supabase.auth.getUser();
+                if (!authData.user) return alert('Oturum açılmamış.');
+                
+                let count = 0;
+                for (const c of data.clients) {
+                  if (!clients.find(existing => existing.full_name === c.full_name)) {
+                    await supabase.from('clients').insert({
+                      user_id: authData.user.id,
+                      full_name: c.full_name,
+                      notes: c.notes,
+                      client_type: c.client_type,
+                      is_active: true
+                    });
+                    count++;
+                  }
+                }
+                alert(`İşlem tamamlandı. ${count} yeni müvekkil eklendi.`);
+                loadData();
+              } else {
+                alert('Klasörde hiç müvekkil bulunamadı.');
+              }
+            } catch (err: any) {
+              alert('Hata: ' + err.message);
+            }
+          }}>
+            <TrendingUp className="w-4 h-4" />Yerelden Aktar
+          </Button>
           <Button id="new-client-btn" className="gap-2 h-9" onClick={() => setDialogOpen(true)}>
             <Plus className="w-4 h-4" />Yeni Müvekkil
           </Button>
